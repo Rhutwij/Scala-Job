@@ -1,22 +1,22 @@
 Spark Seed Project
 
 
-1. Requirement
+Requirement
 
  sbt installed
 
 
-2. How to run
+How to run
 
 Count word Example
 
 >sbt "run com.jobs2careers.task.CountLinesOfKeywordApp"
 
-3. How to build binary
+How to build binary
 
 >sbt clean update compile assembly
 
-4. Submit to Spark to Run
+Submit to Spark to Run
 
 >bin/spark-submit --class com.jobs2careers.ExecutorApp {YOUR DIRECTORY}/spark-seed-assembly-1.0.0.jar com.jobs2careers.task.CountLinesOfKeywordApp
 
