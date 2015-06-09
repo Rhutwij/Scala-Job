@@ -8,7 +8,10 @@ import scala.reflect.runtime._
 /**
  * Created by carl on 6/9/15.
  */
+
+//TODO still working on to manage/scheduce the spark jobs, using this just for now
 object ExecutorApp extends App{
+
 
   val log = LoggerFactory.getLogger("ExecutorApp")
 
