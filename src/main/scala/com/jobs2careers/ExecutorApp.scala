@@ -3,8 +3,6 @@ package com.jobs2careers
 import com.jobs2careers.base.SparkBaseApp
 import org.slf4j.LoggerFactory
 
-import scala.reflect.runtime._
-
 /**
  * Created by carl on 6/9/15.
  */
@@ -29,8 +27,7 @@ object ExecutorApp extends App{
       sys.exit()
     }
   }
-
-  val mirror = universe.runtimeMirror(getClass.getClassLoader)
+  //TODO did not handle the args right now and it seem that below codes is thinking in Java
   val classInstance = Class.forName(className)
   val task = classInstance.newInstance().asInstanceOf[SparkBaseApp]
   task.executeTask(args)

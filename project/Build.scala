@@ -14,8 +14,8 @@ object BuildSettings {
   val buildSettings = Seq(
     organization := "com.jobs2careers",
     version := "1.0.0",
-    scalaVersion := "2.10.5",
-    crossScalaVersions := Seq("2.10.2", "2.10.3", "2.10.4", "2.10.5", "2.11.0", "2.11.1", "2.11.2"),
+    scalaVersion := "2.11.6",
+    crossScalaVersions := Seq("2.10.2", "2.10.3", "2.10.4", "2.10.5", "2.11.0", "2.11.1", "2.11.6"),
     scalacOptions ++= Seq()
   )
 }
@@ -36,7 +36,6 @@ object ApplicationBuild extends Build {
       ++
       Packaging.server
   ) settings(
-    //mainClass in assembly := Some("com.jobs2careers.spark.app.ExecutorApp"),
     excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
       cp filter {_.data.getName == "compile-0.1.0.jar"}
     },
@@ -44,12 +43,6 @@ object ApplicationBuild extends Build {
       art.copy(`classifier` = Some("assembly"))
     },
     fork in run :=true,
-    mappings in Universal <++= sourceDirectory  map { src =>
-      val resources = src / "main" / "resources"
-      val log4j = resources / "log4j.properties"
-      val reference = resources / "application.conf"
-      Seq(log4j -> "conf/log4j.properties", reference -> "conf/application.conf")
-    },
     isSnapshot := true
     )
 

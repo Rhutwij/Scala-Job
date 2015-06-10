@@ -9,22 +9,21 @@ object Dependencies {
   val excludeServlet = ExclusionRule(organization = "javax.servlet")
   val baseDeps = Seq (
     /* spark dependencies */
-    "org.apache.spark"    %  "spark-core_2.10"            % spark_version  excludeAll(excludeGuava),
-    "org.apache.spark"    %  "spark-sql_2.10"             % spark_version  excludeAll(excludeGuava),
-    "org.apache.spark"    %  "spark-streaming_2.10"       % spark_version  excludeAll(excludeGuava),
-    "org.apache.spark"    %  "spark-yarn_2.10"            % spark_version  excludeAll(excludeGuava),
+    "org.apache.spark"    %%  "spark-core"            % spark_version  excludeAll(excludeGuava),
+    "org.apache.spark"    %%  "spark-sql"             % spark_version  excludeAll(excludeGuava),
+    "org.apache.spark"    %%  "spark-streaming"       % spark_version  excludeAll(excludeGuava),
+    "org.apache.spark"    %%  "spark-yarn"            % spark_version  excludeAll(excludeGuava),
     "com.google.protobuf" %  "protobuf-java"              % "2.4.1",
     "org.spark-project.protobuf" % "protobuf-java"        % "2.4.1-shaded",    
     /* hadoop dependencies */
     "org.apache.hadoop"   %  "hadoop-client"              % hadoop_version excludeAll(excludeGuava,excludeJetty,excludeServlet),
     /* mysql dependencies */
     "mysql"               % "mysql-connector-java"        % "5.1.35",
-    "com.gu"              % "prequel_2.10"                % "0.3.12",
     /* other dependencies */
     "com.google.guava"    %  "guava"                      % "11.0.2",
     "joda-time"           %  "joda-time"                  % "2.4",
     "org.joda"            %  "joda-convert"               % "1.6",
-    "log4j"               % "log4j"                       % "1.2.17"
+    "log4j"               %  "log4j"                      % "1.2.17"
   )
 }
 
