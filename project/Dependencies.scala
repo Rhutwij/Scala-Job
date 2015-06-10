@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   val spark_version = "1.3.1"
-  val hadoop_version = "2.6.0"
+  val hadoop_version = "2.4.0"
 
   val excludeGuava = ExclusionRule(organization = "com.google.guava")
   val excludeJetty = ExclusionRule(organization = "org.eclipse.jetty")
@@ -20,10 +20,7 @@ object Dependencies {
     /* mysql dependencies */
     "mysql"               % "mysql-connector-java"        % "5.1.35",
     /* other dependencies */
-    "com.google.guava"    %  "guava"                      % "11.0.2",
-    "joda-time"           %  "joda-time"                  % "2.4",
-    "org.joda"            %  "joda-convert"               % "1.6",
-    "log4j"               %  "log4j"                      % "1.2.17"
+    "com.google.guava"    %  "guava"                      % "11.0.2"
   )
 }
 
