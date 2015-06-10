@@ -43,6 +43,7 @@ object ApplicationBuild extends Build {
       art.copy(`classifier` = Some("assembly"))
     },
     fork in run :=true,
+    ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) },
     isSnapshot := true
     )
 
