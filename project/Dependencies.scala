@@ -17,8 +17,6 @@ object Dependencies {
     "org.spark-project.protobuf" % "protobuf-java"        % "2.4.1-shaded",    
     /* hadoop dependencies */
     "org.apache.hadoop"   %  "hadoop-client"              % hadoop_version excludeAll(excludeGuava,excludeJetty,excludeServlet),
-    /* mysql dependencies */
-    "mysql"               % "mysql-connector-java"        % "5.1.35",
     /* other dependencies */
     "com.google.guava"    %  "guava"                      % "11.0.2"
   )
