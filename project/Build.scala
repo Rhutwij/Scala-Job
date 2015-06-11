@@ -5,9 +5,6 @@ import Dependencies._
 import sbtassembly.Plugin._
 import sbtassembly.AssemblyUtils._
 import AssemblyKeys._
-import Keys._
-import com.typesafe.sbt.packager.Keys._
-import com.typesafe.sbt.SbtNativePackager._
 
 object BuildSettings {
   val projectName = "spark-seed"
@@ -31,10 +28,6 @@ object ApplicationBuild extends Build {
         libraryDependencies ++= baseDeps,
         mergeStrategy in assembly := mergeFirst
       )
-      ++
-      Packaging.settings
-      ++
-      Packaging.server
   ) settings(
     excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
       cp filter {_.data.getName == "compile-0.1.0.jar"}
