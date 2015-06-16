@@ -1,0 +1,6 @@
+.idea/*
+.idea/*.xml
+target
+project/target
+project/project/target
+.idea_modules
