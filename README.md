@@ -4,6 +4,10 @@ Spark Seed Project
 # Requirements #
 SBT must be installed on your system.
 
+## How to Compile ##
+```shell
+$ sbt compile
+```
 
 ## How to Run ##
 
