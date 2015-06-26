@@ -32,8 +32,9 @@ object SaveAndLoadRDDJob extends SparkBaseJob with LogLike {
     // Collect the results (sometimes the data is too large to do this).
     // You'll notice the elements are out of order. That's because that's
     //   the order in which they were collected from the executors.
+    val results = transformedRDD.collect().toList
     println(resultsBanner)
-    println(transformedRDD.collect().toList)
+    println(results)
 
     // Let Spark know we're done now
     sc.stop()
