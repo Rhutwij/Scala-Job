@@ -22,6 +22,7 @@ object Dependencies {
 
     /* other dependencies */
     "com.google.guava"    %  "guava"                  % "11.0.2",
+    "net.sf.jopt-simple" % "jopt-simple"              % "4.8",
 
     /* test dependencies */
     "org.mockito" % "mockito-all" % "1.9.5" % "test", // MIT
