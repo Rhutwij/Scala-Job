@@ -1,22 +1,29 @@
 Spark Seed Project
 
 
-Requirement
+# Requirements #
+SBT must be installed on your system.
 
- sbt installed
 
+# How to run #
 
-How to run
-
-Count word Example
-
->sbt "run com.jobs2careers.task.CountLinesOfKeywordApp"
+```shell
+$ sbt run
+```
 
 How to build binary
 
->sbt clean update compile assembly
+```shell
+$ sbt assembly
+```
 
 Submit to Spark to Run
+
+```shell
+$ cd ${SPARK_INSTALLATION_DIR}
+$ ./bin/spark-submit --class com.jobs2careers.apps.CountAnimalsJob --master local[*] ${PATH_TO}/spark-seed/target/scala-2.10/spark-seed-assembly-1.0.0.jar
+
+```
 
 >bin/spark-submit --class com.jobs2careers.ExecutorApp {YOUR DIRECTORY}/spark-seed-assembly-1.0.0.jar com.jobs2careers.task.CountLinesOfKeywordApp
 
@@ -26,4 +33,4 @@ Add parameter to Run on Spark Standalone Cluster
 
 Add parameter to Run on Spark YARN Cluster
 
---master yarn-client 
+--master yarn-client
