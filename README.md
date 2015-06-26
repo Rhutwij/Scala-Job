@@ -1,7 +1,7 @@
-Spark Seed Project
+# Spark Seed Project #
 
 
-# Prerequisites #
+## Prerequisites ##
 SBT must be installed on your system.
 
 ## How to Compile ##
