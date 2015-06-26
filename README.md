@@ -22,7 +22,7 @@ First [download Spark 1.4.0 with Hadoop 2.3](https://spark.apache.org/downloads.
 ```shell
 $ cd ${SPARK_INSTALLATION_DIR}
 $ ./bin/spark-submit --class com.jobs2careers.apps.CountAnimalsJob --master local[*] ${PATH_TO}/spark-seed/target/scala-2.10/spark-seed-assembly-1.0.0.jar
-
+# ./bin/spark-submit --class com.jobs2careers.apps.SaveAndLoadRDDJob --master local[*] ${PATH_TO}/spark-seed/target/scala-2.10/spark-seed-assembly-1.0.0.jar
 ```
 
 Add parameter to Run on Spark Standalone Cluster
