@@ -15,6 +15,8 @@ $ sbt compile
 $ sbt run
 ```
 
+Or alternatively, `right-click` on any of the files under the com.jobs2careers.apps package and click `run`.
+
 ## How to Build a .jar to Submit to Spark ##
 
 ```shell
