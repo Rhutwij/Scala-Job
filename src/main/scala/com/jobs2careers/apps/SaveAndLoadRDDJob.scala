@@ -13,7 +13,8 @@ import org.apache.spark.rdd.RDD
  * and transforming it.
  */
 object SaveAndLoadRDDJob extends SparkBaseJob with LogLike {
-  val defaultPathToFile = "file:/tmp/myRDD"
+  // this is bad; should be configurable
+  var pathToFile: String = "file:/tmp/myRDD"
   
   /**
    * Called by spark-submit and sbt run.
@@ -21,26 +22,34 @@ object SaveAndLoadRDDJob extends SparkBaseJob with LogLike {
    *             [path://to/file] or else use a temp file.
    */
   def main(args: Array[String]): Unit = {
+    args match {
+      case Array(first, _*) =>
+        println(s"Using file from $first")
+        pathToFile = first
+      case _ =>
+        println(s"Using default file $pathToFile")
+    }
     // Get a SparkContext and save out the RDD
     val sc = getSparkContext
     saveRDD(sc)
 
     // Load the RDD and transform it
-    val rdd = loadRDD(sc)
+    val rdd = loadRDD(sc, pathToFile)
     val transformedRDD = plusOne(rdd)
 
     // Collect the results (sometimes the data is too large to do this).
     // You'll notice the elements are out of order. That's because that's
     //   the order in which they were collected from the executors.
     val results = transformedRDD.collect().toList
-    println(resultsBanner)
-    println(results)
 
     // Let Spark know we're done now
     sc.stop()
 
+    println(resultsBanner)
+    println(results)
+
     // Delete the file we made
-    val rddFile = new File(new URL(defaultPathToFile).getPath)
+    val rddFile = new File(new URL(pathToFile).getPath)
     TempFiles.deleteRecursive(rddFile)
   }
 
@@ -51,7 +60,7 @@ object SaveAndLoadRDDJob extends SparkBaseJob with LogLike {
    */
   def saveRDD(sc: SparkContext): Unit = {
     val rdd = sc.parallelize(1 to 10)
-    rdd.saveAsTextFile(defaultPathToFile)
+    rdd.saveAsTextFile(pathToFile)
   }
 
   /**
@@ -59,8 +68,8 @@ object SaveAndLoadRDDJob extends SparkBaseJob with LogLike {
    * @param sc the SparkContext for our job
    * @return the RDD we loaded
    */
-  def loadRDD(sc: SparkContext): RDD[String] = {
-    sc.textFile(defaultPathToFile)
+  def loadRDD(sc: SparkContext, path: String): RDD[String] = {
+    sc.textFile(path)
   }
 
   /**
