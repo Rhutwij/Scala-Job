@@ -18,6 +18,9 @@ import org.scalatest.mock.MockitoSugar
  *
  * If you use a SLF4J logger in your classes, don't expect to see the logs here.
  * For some reason ScalaTest swallows all the logs.
+ *
+ * You can run tests by right clicking on the class, or any of the it or
+ * describe blocks.
  */
 class CountAnimalsAppSpec extends FunSpec with MockitoSugar with BeforeAndAfter{
   private val fixture = "fixtures/animals.txt"
@@ -33,8 +36,9 @@ class CountAnimalsAppSpec extends FunSpec with MockitoSugar with BeforeAndAfter{
   describe("CountAnimalsApp") {
     describe("#getAnimalCounts") {
       it("should return the correct count for sharks") {
-        val countAnimalSparkJob = new CountAnimalsApp(animalsFile)
-        val animalCounts = countAnimalSparkJob.getAnimalCounts
+        val animalCounts = CountAnimalsJob.getAnimalCounts(
+          animalsFile.getPath
+        )
         val expected = 2
 
         // it just so happens that there should be 2 sharks.
@@ -42,8 +46,9 @@ class CountAnimalsAppSpec extends FunSpec with MockitoSugar with BeforeAndAfter{
       }
 
       it("should return the correct count for deer") {
-        val countAnimalSparkJob = new CountAnimalsApp(animalsFile)
-        val animalCounts = countAnimalSparkJob.getAnimalCounts
+        val animalCounts = CountAnimalsJob.getAnimalCounts(
+          animalsFile.getPath
+        )
         val expected = 3
 
         // it just so happens that there should be 3 deer.
