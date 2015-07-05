@@ -1,14 +1,12 @@
 package com.jobs2careers.apps
 
-import java.io.File
-import com.jobs2careers.utilities.ClassPathResourceLoader
-import org.scalatest.{ BeforeAndAfter, FunSpec }
-import org.scalatest.Matchers._
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.BeforeAndAfterAll
-import org.apache.spark.SparkContext
-import com.jobs2careers.base.SparkLocalConfig
 import org.apache.spark.rdd.RDD
+import org.scalatest.BeforeAndAfter
+import org.scalatest.FunSpec
+import org.scalatest.Matchers.be
+import org.scalatest.Matchers.convertToAnyShouldWrapper
+
+import com.jobs2careers.utilities.ClassPathResourceLoader
 import com.jobs2careers.utilities.SharedSparkContext
 
 /**
@@ -26,7 +24,7 @@ import com.jobs2careers.utilities.SharedSparkContext
  * You can run tests by right clicking on the class, or any of the it or
  * describe blocks.
  */
-class CountAnimalsAppSpec extends FunSpec with MockitoSugar with BeforeAndAfter with SharedSparkContext {
+class CountAnimalsAppSpec extends FunSpec with BeforeAndAfter with SharedSparkContext {
   private val fixture = "fixtures/animals.txt"
   private var animals: RDD[String] = _
 
