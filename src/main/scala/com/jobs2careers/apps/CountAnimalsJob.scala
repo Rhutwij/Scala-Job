@@ -1,10 +1,10 @@
 package com.jobs2careers.apps
 
 import com.jobs2careers.base.SparkBaseJob
-import com.jobs2careers.utils.{LogLike, TempFiles}
+import com.jobs2careers.utils.{ LogLike, TempFiles }
 import org.slf4j.LoggerFactory
-
 import scala.collection.Map
+import org.apache.spark.rdd.RDD
 
 /**
  * This is a sample Spark job that counts animals in a given file. Each animal
@@ -42,11 +42,15 @@ object CountAnimalsJob extends SparkBaseJob with LogLike {
     val rdd = sc.textFile(pathToAnimals)
 
     // Group by the type of animal.
-    val result = rdd.countByValue()
+    val result = groupByAnimalType(rdd)
     sc.stop()
 
     logger.info(s"Wow, ${result.size} kinds of animals!")
     result
   }
 
+  def groupByAnimalType(animals: RDD[String]) = {
+    // Group by the type of animal.
+    animals.countByValue()
+  }
 }
