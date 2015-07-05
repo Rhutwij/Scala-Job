@@ -4,3 +4,12 @@ target
 project/target
 project/project/target
 .idea_modules
+/bin/
+
+# scala-ide
+.cache-main
+.cache-tests
+.classpath
+.project
+.settings/
+
