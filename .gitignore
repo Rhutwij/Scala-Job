@@ -7,8 +7,7 @@ project/project/target
 /bin/
 
 # scala-ide
-.cache-main
-.cache-tests
+.cache*
 .classpath
 .project
 .settings/

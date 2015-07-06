@@ -10,8 +10,8 @@ val sparkVersion = "1.3.1"
 
 // managed libraries
 libraryDependencies ++= Seq(
-    "org.apache.spark"    %%  "spark-core"            % sparkVersion,
-    "org.apache.spark"    %%  "spark-sql"             % sparkVersion,
+    "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
+    "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "net.debasishg" %% "redisclient" % "3.0",
     "com.typesafe.play" % "play-json_2.10" % "2.2.1"
 )
@@ -27,3 +27,5 @@ parallelExecution in Test := false
 // other configuration
 EclipseKeys.withSource := true
 
+// run only unitest
+testOptions in Test := Seq(Tests.Filter(s => s.endsWith("Spec")))
