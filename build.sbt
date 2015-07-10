@@ -13,7 +13,8 @@ libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "net.debasishg" %% "redisclient" % "3.0",
-    "com.typesafe.play" % "play-json_2.10" % "2.2.1"
+    "com.typesafe.play" % "play-json_2.10" % "2.2.1",
+    "joda-time" % "joda-time" % "2.8.1"
 )
 
 // tests
@@ -29,3 +30,6 @@ EclipseKeys.withSource := true
 
 // run only unitest
 testOptions in Test := Seq(Tests.Filter(s => s.endsWith("Spec")))
+
+// https://github.com/sbt/sbt-assembly#excluding-scala-library-jars
+assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
