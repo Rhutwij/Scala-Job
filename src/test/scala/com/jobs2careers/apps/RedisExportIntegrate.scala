@@ -49,11 +49,6 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
   }
 
   describe("Integrate UserProfiles to Redis Database") {
-    it("should return the correct number of profiles") {
-      val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
-
-      profiles.count() should be(23)
-    }
     it("should integrate with Redis") {
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
       UserProfileJob.transport(profiles)
