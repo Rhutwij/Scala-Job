@@ -35,19 +35,21 @@ object UserProfileJob extends RedisConfig {
     emailToUserProfiles map { case (email, jobIds) => UserProfile(email, jobIds) }
   }
 
-  def transport(userProfiles: RDD[UserProfile]): Unit =
-    {
-      userProfiles.foreachPartition { partition =>
-        val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
+  def transport(userProfiles: RDD[UserProfile]): Unit = {
+    // 37 days * 24 hours / day * 60 minutes / hour * 60 seconds / minute 
+    val profileExpiration = Seconds(37 * 24 * 60 * 60)
+    userProfiles.foreachPartition { partition =>
+      val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
+      try {
         partition.foreach {
           case (UserProfile(email, jobIds)) =>
             val jsonval = Json.toJson(jobIds)
             val jsonstr = Json.stringify(jsonval)
-            redis.set(email, jsonstr)
+            redis.set(email, jsonstr, false, profileExpiration)
         }
-        redis.quit
-      }
+      } finally { redis.quit }
     }
+  }
 }
 
 case class UserProfile(email: String, jobIds: Seq[String])
