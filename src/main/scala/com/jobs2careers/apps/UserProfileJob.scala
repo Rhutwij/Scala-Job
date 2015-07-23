@@ -5,13 +5,16 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.GroupedData
 import org.apache.spark.sql.types.StructType
 import org.joda.time.DateTime
-
 import com.jobs2careers.base.RedisConfig
 import com.redis._
-
 import play.api.libs.json._
-
 import org.apache.spark.SparkContext._
+import org.apache.spark.SparkConf
+import org.apache.spark.SparkContext
+import com.jobs2careers.apps._
+import org.apache.spark.rdd._
+import org.joda.time._
+import org.apache.spark.sql.SQLContext
 
 //JSON structure
 //{
@@ -43,6 +46,31 @@ case class UserProfile(userId: String, mailImpressions: Seq[MailImpressions])
  * Created by wenjing on 7/1/15.
  */
 object UserProfileJob extends RedisConfig {
+
+  def main(args: Array[String]) {
+    val conf = new SparkConf().setAppName("Mail User Recommendation Profiles")
+    conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    val sc = new SparkContext(conf)
+    val sqlContext = new SQLContext(sc)
+
+    //Load the Raw Data
+    val userProfiledStart = new LocalDateTime
+    println(s"The user profiles generate started at $userProfiledStart")
+    val email_logs = DataRegistry.mail(sqlContext, 4)
+
+    // Create profile RDD from raw data dataframe
+    val profiles: RDD[UserProfile] = UserProfileJob.transform(email_logs)
+
+    //Upload data to redis
+    UserProfileJob.transport(profiles)
+
+    //Check number of profiles (debug)
+    val userProfiledFinished = new LocalDateTime
+    println(s"Created ${profiles.count()} profiles!")
+    println(s"The user profile generation was started at $userProfiledStart and finished at $userProfiledFinished")
+
+    sc.stop()
+  }
 
   implicit val mailImpressionsFormat = Json.format[MailImpressions]
   implicit val profileFormat = Json.format[UserProfile]
@@ -82,7 +110,6 @@ object UserProfileJob extends RedisConfig {
         partition.foreach {
           case (profile: UserProfile) =>
             val userId = profile.userId
-            //            val jsonval = Json.toJson(jobIds)
             val jsonstr = serialize(profile)
             redis.setex(userId, profileExpiration, jsonstr)
         }
