@@ -10,6 +10,8 @@ import org.scalatest.Matchers.convertToAnyShouldWrapper
 import com.jobs2careers.utilities.ClassPathResourceLoader
 import com.jobs2careers.utilities.SharedSparkContext
 import org.apache.spark.sql.DataFrame
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 
 class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkContext {
   private var sqlContext: SQLContext = _
@@ -43,19 +45,26 @@ class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkConte
   it("be able to load paths") {
 
     val input = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
-    
+
     val df: DataFrame = DataRegistry.load(sqlContext, input)
-    
+
     df.count should be(41)
   }
-  
-    it("be able to load paths even if they don't exist") {
+
+  it("be able to load paths even if they don't exist") {
 
     val input = Seq(s"$fixturesPath/2015/07/04/*.log", s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
-    
-    val df: DataFrame = DataRegistry.load(sqlContext, input)
-    
-    df.count should be(41)
+    val capturedOut = new ByteArrayOutputStream
+    val printStream = new PrintStream(capturedOut)
+    Console.withOut(printStream) {
+      Console.withErr(printStream) {
+        val df: DataFrame = DataRegistry.load(sqlContext, input)
+        df.count should be(41)
+        println(capturedOut)
+        capturedOut.toString().length() should be >= 100
+      }
+    }
+    capturedOut.close()
   }
 
   //  it("read multiple files from previous 2 weeks")

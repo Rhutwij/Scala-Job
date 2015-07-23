@@ -39,7 +39,7 @@ object DataRegistry extends {
           case e: Throwable =>
             //TODO log this exception properly!
             println(s"Unable to load $path")
-            e.printStackTrace()
+//            e.printStackTrace()
             None
         }
       }

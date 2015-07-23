@@ -28,7 +28,7 @@ import com.jobs2careers.utilities.SharedSparkContext
  * describe blocks.
  */
 class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkContext with RedisConfig {
-  private val fixture = "fixtures/sample_mail_update.log"
+  private val fixture = "fixtures/sample_mail_update2.log"
   private var sqlContext: SQLContext = _
   private var mailUpdateDataFrame: DataFrame = _
 
@@ -50,13 +50,38 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
 
   describe("Integrate UserProfiles to Redis Database") {
     it("should integrate with Redis") {
+      val testUser = "joetorres0859@jobs2careers.com"
+      val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
+
+      //clean up from previous run
+      redis.del(testUser)
+
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
       UserProfileJob.transport(profiles)
+
+      val userProfileJson: Option[String] = redis.get(testUser)
+      //      val jobs = Json.parse(jobslist.get).as[Seq[String]]
+      userProfileJson.get should include("1839849788")
+      userProfileJson.get should include("4123")
+      //      println(jobslist)
+      //      jobslist should be ("abcdefg")
+
+    }
+
+    it("should set even if value exists") {
+      val testUser = "joetorres0859@jobs2careers.com"
       val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
-      val jobslist: Option[String] = redis.get("joetorres0859@gmail.com")
-      val jobs = Json.parse(jobslist.get).as[Seq[String]]
-      jobs should contain("1841516234")
-      jobs should contain("1785553689")
+
+      //clean up from previous run
+      redis.set(testUser, "")
+
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
+      UserProfileJob.transport(profiles)
+
+      val userProfileJson: Option[String] = redis.get(testUser)
+      //      val jobs = Json.parse(jobslist.get).as[Seq[String]]
+      userProfileJson.get should include("1839849788")
+      userProfileJson.get should include("4123")
       //      println(jobslist)
       //      jobslist should be ("abcdefg")
 
