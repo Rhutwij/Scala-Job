@@ -52,11 +52,14 @@ object UserProfileJob extends RedisConfig {
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc)
+    
+    //Input
+    val numDays = if (args.length > 0) args(0).toInt else 15
 
     //Load the Raw Data
     val userProfiledStart = new LocalDateTime
     println(s"The user profiles generate started at $userProfiledStart")
-    val email_logs = DataRegistry.mail(sqlContext, 4)
+    val email_logs = DataRegistry.mail(sqlContext, numDays)
 
     // Create profile RDD from raw data dataframe
     val profiles: RDD[UserProfile] = UserProfileJob.transform(email_logs)

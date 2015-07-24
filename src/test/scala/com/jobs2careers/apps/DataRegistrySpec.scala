@@ -25,20 +25,27 @@ class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkConte
   it("be able to be run twice") {
     val expected = Seq("src/test/resources/fixtures/2015/07/07/*.log", "src/test/resources/fixtures/2015/07/06/*.log", "src/test/resources/fixtures/2015/07/05/*.log")
 
-    val mailImpressionPaths = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 8))
+    val mailImpressionPaths = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 7))
     mailImpressionPaths should be(expected)
 
-    val mailImpressionPaths2 = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 8))
+    val mailImpressionPaths2 = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 7))
     mailImpressionPaths2 should be(expected)
+  }
+
+  it("grab today's date as well") {
+    val expected = Seq("src/test/resources/fixtures/2015/07/08/*.log", "src/test/resources/fixtures/2015/07/07/*.log", "src/test/resources/fixtures/2015/07/06/*.log")
+
+    val mailImpressionPaths = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 8))
+    mailImpressionPaths should be(expected)
   }
 
   it("be able to be classpath patchs") {
     val expected = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
 
-    val mailImpressionPaths = DataRegistry.datePaths(3, fixturesPath + "/", "*.log", new LocalDate(2015, 7, 8))
+    val mailImpressionPaths = DataRegistry.datePaths(3, fixturesPath + "/", "*.log", new LocalDate(2015, 7, 7))
     mailImpressionPaths should be(expected)
 
-    val mailImpressionPaths2 = DataRegistry.datePaths(3, fixturesPath + "/", "*.log", new LocalDate(2015, 7, 8))
+    val mailImpressionPaths2 = DataRegistry.datePaths(3, fixturesPath + "/", "*.log", new LocalDate(2015, 7, 7))
     mailImpressionPaths2 should be(expected)
   }
 

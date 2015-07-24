@@ -88,9 +88,9 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
       val actual = UserProfileJob.serialize(profile)
       expected should be(actual)
     }
-    it("should give me the output in JSON format") {
-      val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
-      profiles.foreach { println }
-    }
+//    it("should give me the output in JSON format") {
+//      val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
+//      profiles.foreach { println }
+//    }
   }
 }

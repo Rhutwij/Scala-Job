@@ -6,7 +6,7 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.DataFrame
 
-object DataRegistry extends {
+object DataRegistry {
 
   val fmt = DateTimeFormat.forPattern("yyyy/MM/dd/")
   
@@ -18,7 +18,7 @@ object DataRegistry extends {
   def datePaths(days: Integer, prefix: String, suffix: String,
                 datetime: LocalDate = new LocalDate()): Seq[String] =
     {
-      val previousDays = 1 to days
+      val previousDays = 0 to (days - 1)
       val previousDatePaths: Seq[String] = previousDays map { a =>
         val prevdate = datetime.minusDays(a)
         val datestring = fmt.print(prevdate)
