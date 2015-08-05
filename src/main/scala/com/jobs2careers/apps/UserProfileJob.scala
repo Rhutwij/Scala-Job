@@ -80,9 +80,9 @@ object UserProfileJob extends RedisConfig {
 
   def transform(mailUpdateDataFrame: DataFrame): RDD[UserProfile] = {
     import mailUpdateDataFrame.sqlContext.implicits._
-
     val emailToImpressionsDf: DataFrame = mailUpdateDataFrame.select(
-      mailUpdateDataFrame("email"), mailUpdateDataFrame("impressions.id"), mailUpdateDataFrame("timestamp"))
+      mailUpdateDataFrame("email"), mailUpdateDataFrame("impressions.id")
+      , mailUpdateDataFrame("timestamp")).where(mailUpdateDataFrame("timestamp").isNotNull).where(mailUpdateDataFrame("timestamp").notEqual("null"))
 
     //in 1.4, this will be available off of row
     val fieldNames: Map[String, Int] = emailToImpressionsDf.schema.fieldNames.zipWithIndex.toMap

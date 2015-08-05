@@ -4,7 +4,6 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.DataFrame
 
 object DataRegistry {
 
@@ -39,7 +38,7 @@ object DataRegistry {
           case e: Throwable =>
             //TODO log this exception properly!
             println(s"Unable to load $path")
-//            e.printStackTrace()
+            //e.printStackTrace()
             None
         }
       }
