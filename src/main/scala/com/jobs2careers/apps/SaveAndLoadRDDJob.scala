@@ -2,11 +2,11 @@ package com.jobs2careers.apps
 
 import java.io.File
 import java.net.URL
-
 import com.jobs2careers.base.SparkBaseJob
 import com.jobs2careers.utils.{TempFiles, LogLike}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import java.nio.file.Files
 
 /**
  * This job is an example of creating an RDD, saving it, and then loading it
@@ -14,7 +14,9 @@ import org.apache.spark.rdd.RDD
  */
 object SaveAndLoadRDDJob extends SparkBaseJob with LogLike {
   // this is bad; should be configurable
-  var pathToFile: String = "file:/tmp/myRDD"
+  val tempDirPath = Files.createTempDirectory("AllSpark")
+  Files.delete(tempDirPath)
+  var pathToFile: String = tempDirPath.toUri().toASCIIString()
   
   /**
    * Called by spark-submit and sbt run.
