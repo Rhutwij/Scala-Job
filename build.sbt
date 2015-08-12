@@ -6,7 +6,7 @@ version := "0.0.1"
 
 scalaVersion := "2.10.5"
 
-val sparkVersion = "1.3.1"
+val sparkVersion = "1.4.1"
 
 // managed libraries
 libraryDependencies ++= Seq(

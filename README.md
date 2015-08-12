@@ -9,6 +9,18 @@ SBT must be installed on your system.
 $ sbt compile
 ```
 
+## How to Test ##
+
+```shell
+$ sbt test
+```
+
+## How to Create Eclipse Project ##
+
+```shell
+$ sbt eclipse
+```
+
 ## How to Run ##
 
 ```shell
