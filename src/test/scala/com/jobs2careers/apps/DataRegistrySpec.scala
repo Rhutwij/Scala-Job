@@ -16,80 +16,85 @@ import java.io.PrintStream
 
 class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkContext {
   private var sqlContext: SQLContext = _
- // private val cpLoader = new ClassPathResourceLoader()
- // val fixturesPath = cpLoader.loadResource("fixtures/").get.getPath
+  private val cpLoader = new ClassPathResourceLoader()
+  val fixturesPath = cpLoader.loadResource("fixtures/").get.getPath
 
   before {
     sqlContext = new SQLContext(sc)
   }
 
-  
-//  it("be able to be run twice") {
-//    val expected = Seq("src/test/resources/fixtures/2015/07/07/*.log", "src/test/resources/fixtures/2015/07/06/*.log", "src/test/resources/fixtures/2015/07/05/*.log")
-//
-//    val mailImpressionPaths = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 7))
-//    mailImpressionPaths should be(expected)
-//
-//    val mailImpressionPaths2 = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 7))
-//    mailImpressionPaths2 should be(expected)
-//  }
-//
-//  it("grab today's date as well") {
-//    val expected = Seq("src/test/resources/fixtures/2015/07/08/*.log", "src/test/resources/fixtures/2015/07/07/*.log", "src/test/resources/fixtures/2015/07/06/*.log")
-//
-//    val mailImpressionPaths = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 8))
-//    mailImpressionPaths should be(expected)
-//  }
-//
-//  it("be able to be classpath patchs") {
-//    val expected = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
-//
-//    val mailImpressionPaths = DataRegistry.datePaths(3, fixturesPath + "/", "*.log", new LocalDate(2015, 7, 7))
-//    mailImpressionPaths should be(expected)
-//
-//    val mailImpressionPaths2 = DataRegistry.datePaths(3, fixturesPath + "/", "*.log", new LocalDate(2015, 7, 7))
-//    mailImpressionPaths2 should be(expected)
-//  }
-//
-//  it("be able to load paths") {
-//
-//    val input = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
-//
-//    val df: DataFrame = DataRegistry.load(sqlContext, input)
-//
-//    df.count should be(41)
-//  }
+  it("be able to be run twice") {
+    val expected = Seq("src/test/resources/fixtures/2015/07/07/*.log", "src/test/resources/fixtures/2015/07/06/*.log", "src/test/resources/fixtures/2015/07/05/*.log")
 
-//  it("be able to load paths even if they don't exist") {
-//
-//    val input = Seq(s"$fixturesPath/2015/07/04/*.log", s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
-//    val capturedOut = new ByteArrayOutputStream
-//    val printStream = new PrintStream(capturedOut)
-//    Console.withOut(printStream) {
-//      Console.withErr(printStream) {
-//        val df: DataFrame = DataRegistry.load(sqlContext, input)
-//        df.count should be(41)
-//        println(capturedOut)
-//        capturedOut.toString().length() should be >= 100
-//      }
-//    }
-//    capturedOut.close()
-//  }
+    val mailImpressionPaths = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 7))
+    mailImpressionPaths should be(expected)
 
-//  it("read multiple files from previous 2 weeks")
-//  {
-//    val mailImpressionPaths: Seq[String] = DataRegistry.datePaths(3, "/home/wenjing/Downloads/spark-seed/src/test/resources/fixtures/", "sample_mail_update.log", new LocalDate(2015, 7, 7))
-//    mailImpressionPaths.foreach{println}
-//    if (mailImpressionPaths.isEmpty)
-//    {
-//      println("Files do not exist, cannot read files")
-//    }
-//    else{
-//      val MailDataFrame = DataRegistry.load(sqlContext,mailImpressionPaths)
-//      val profiles = UserProfileJob.transform(MailDataFrame)
-//      profiles.count() should be(23)
-//    }
-//  }
+    val mailImpressionPaths2 = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 7))
+    mailImpressionPaths2 should be(expected)
+  }
+
+  it("grab today's date as well") {
+    val expected = Seq("src/test/resources/fixtures/2015/07/08/*.log", "src/test/resources/fixtures/2015/07/07/*.log", "src/test/resources/fixtures/2015/07/06/*.log")
+
+    val mailImpressionPaths = DataRegistry.datePaths(3, "src/test/resources/fixtures/", "*.log", new LocalDate(2015, 7, 8))
+    mailImpressionPaths should be(expected)
+  }
+
+  it("be able to be classpath patchs") {
+    val expected = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
+
+    val mailImpressionPaths = DataRegistry.datePaths(3, fixturesPath + "/", "*.log", new LocalDate(2015, 7, 7))
+    mailImpressionPaths should be(expected)
+
+    val mailImpressionPaths2 = DataRegistry.datePaths(3, fixturesPath + "/", "*.log", new LocalDate(2015, 7, 7))
+    mailImpressionPaths2 should be(expected)
+  }
+
+  it("be able to load paths") {
+
+    val input = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
+
+    val df: DataFrame = DataRegistry.load(sqlContext, input)
+
+    df.count should be(41)
+  }
+
+  it("load null timestamps values") {
+
+    val input = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log", s"$fixturesPath/2015/07/15/*.log")
+
+    val df: DataFrame = DataRegistry.load(sqlContext, input)
+
+    df.count should be(45)
+  }
+
+  it("be able to load paths even if they don't exist") {
+
+    val input = Seq(s"$fixturesPath/2015/07/04/*.log", s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
+    val capturedOut = new ByteArrayOutputStream
+    val printStream = new PrintStream(capturedOut)
+    Console.withOut(printStream) {
+      Console.withErr(printStream) {
+        val df: DataFrame = DataRegistry.load(sqlContext, input)
+        df.count should be(41)
+        println(capturedOut)
+        capturedOut.toString().length() should be >= 100
+      }
+    }
+    capturedOut.close()
+  }
+
+  it("read multiple files from previous 2 weeks") {
+    val mailImpressionPaths: Seq[String] = DataRegistry.datePaths(3, s"$fixturesPath/", "sample_mail_update.log", new LocalDate(2015, 7, 7))
+//    mailImpressionPaths.foreach { println }
+    if (mailImpressionPaths.isEmpty) {
+      println("Files do not exist, cannot read files")
+    } else {
+      val MailDataFrame = DataRegistry.load(sqlContext, mailImpressionPaths)
+      val profiles = UserProfileJob.transform(MailDataFrame)
+      profiles.count() should be(23)
+    }
+  }
 }
 
   // def alwaysTrueFilter(s3Path: String) = true

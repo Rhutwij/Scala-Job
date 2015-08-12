@@ -8,10 +8,10 @@ import org.apache.spark.sql.DataFrame
 object DataRegistry {
 
   val fmt = DateTimeFormat.forPattern("yyyy/MM/dd/")
-  
+
   def mail(sqlContext: SQLContext, previousDays: Int): DataFrame = {
     val logPaths = datePaths(previousDays, "s3n://jiantest/mail/", "mail/*.bz2")
-    load(sqlContext, logPaths)    
+    load(sqlContext, logPaths)
   }
 
   def datePaths(days: Integer, prefix: String, suffix: String,
@@ -42,7 +42,9 @@ object DataRegistry {
             None
         }
       }
-      dataFrames.reduce { (a, b) => a.unionAll(b) }
+      dataFrames.reduce { (a, b) =>
+        a.unionAll(b)
+      }
     }
 
 }

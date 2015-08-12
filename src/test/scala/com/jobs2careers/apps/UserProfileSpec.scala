@@ -34,7 +34,7 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
   private var sqlContext: SQLContext = _
   private var mailUpdateDataFrame: DataFrame = _
 
-  before {
+  before({
     sqlContext = new SQLContext(sc)
     val resultsBanner =
       """
@@ -42,21 +42,35 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
         |*            Results           *
         |********************************
       """.stripMargin
+
+    mailUpdateDataFrame = createDataFrame(fixture)
+  })
+
+  def createDataFrame(fixturePath: String): DataFrame = {
     val resource = new ClassPathResourceLoader()
-      .loadResource(fixture)
+      .loadResource(fixturePath)
     assert(resource != None, s"Test fixture $fixture does not exist!")
     val fixtureFile = resource.get
     val fixturesPath = fixtureFile.getPath
-    mailUpdateDataFrame = sqlContext.jsonFile(fixturesPath)
+    sqlContext.jsonFile(fixturesPath)
   }
 
   describe("UserProfileApp") {
     it("should return the correct number of profiles") {
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
 
+      profiles.count() should be(23)
+    }
+
+    it("should work with null timestamps") {
+      val mailUpdateNull = createDataFrame("fixtures/sample_mail_update_null.log")
+
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateNull)
+
       profiles.count() should be(22)
     }
-   // it("should serialize to JSON") {
+
+    it("should serialize to JSON") {
       //{
       //    "userId": "wenjing@jobs2careers.com",
       //    "mailImpressions": [
@@ -79,18 +93,18 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
       //    ]
       //}
 
-//      val expected = """{"userId":"wenjing@jobs2careers.com","mailImpressions":[{"sent":"2015-07-22T16:34:41.000Z","jobs":[1,2,3]},{"sent":"2015-07-21T16:34:41.000Z","jobs":[4,5,6]}]}"""
-//
-//      val impression1 = MailImpressions("2015-07-22T16:34:41.000Z", Seq(1, 2, 3))
-//      val impression2 = MailImpressions("2015-07-21T16:34:41.000Z", Seq(4, 5, 6))
-//      val profile = UserProfile("wenjing@jobs2careers.com", Seq(impression1, impression2))
-//
-//      val actual = UserProfileJob.serialize(profile)
-//      expected should be(actual)
-//    }
-//    it("should give me the output in JSON format") {
-//      val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
+      val expected = """{"userId":"wenjing@jobs2careers.com","mailImpressions":[{"sent":"2015-07-22T16:34:41.000Z","jobs":[1,2,3]},{"sent":"2015-07-21T16:34:41.000Z","jobs":[4,5,6]}]}"""
+
+      val impression1 = MailImpressions("2015-07-22T16:34:41.000Z", Seq(1, 2, 3))
+      val impression2 = MailImpressions("2015-07-21T16:34:41.000Z", Seq(4, 5, 6))
+      val profile = UserProfile("wenjing@jobs2careers.com", Seq(impression1, impression2))
+
+      val actual = UserProfileJob.serialize(profile)
+      expected should be(actual)
+    }
+    it("should give me the output in JSON format") {
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
 //      profiles.foreach { println }
-//    }
+    }
   }
 }
