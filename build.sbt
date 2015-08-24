@@ -1,4 +1,4 @@
-name := "spark-seed"
+name := "all-spark"
 
 organization := "com.jobs2careers"
 
@@ -7,6 +7,11 @@ version := "0.0.1"
 scalaVersion := "2.10.5"
 
 val sparkVersion = "1.4.1"
+
+//Resolvers
+resolvers ++= Seq(
+  "Typesafe" at "http://repo.typesafe.com/typesafe/releases/"
+)
 
 // managed libraries
 libraryDependencies ++= Seq(
