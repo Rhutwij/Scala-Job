@@ -52,7 +52,7 @@ object UserProfileJob extends RedisConfig {
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
     val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc)
-    
+
     //Input
     val numDays = if (args.length > 0) args(0).toInt else 15
 
@@ -81,8 +81,7 @@ object UserProfileJob extends RedisConfig {
   def transform(mailUpdateDataFrame: DataFrame): RDD[UserProfile] = {
     import mailUpdateDataFrame.sqlContext.implicits._
     val emailToImpressionsDf: DataFrame = mailUpdateDataFrame.select(
-      mailUpdateDataFrame("email"), mailUpdateDataFrame("impressions.id")
-      , mailUpdateDataFrame("timestamp")).where(mailUpdateDataFrame("timestamp").isNotNull).where(mailUpdateDataFrame("timestamp").notEqual("null"))
+      mailUpdateDataFrame("email"), mailUpdateDataFrame("impressions.id"), mailUpdateDataFrame("timestamp")).where(mailUpdateDataFrame("timestamp").isNotNull).where(mailUpdateDataFrame("timestamp").notEqual("null"))
 
     //in 1.4, this will be available off of row
     val fieldNames: Map[String, Int] = emailToImpressionsDf.schema.fieldNames.zipWithIndex.toMap
@@ -105,8 +104,8 @@ object UserProfileJob extends RedisConfig {
   }
 
   def transport(userProfiles: RDD[UserProfile]): Unit = {
-    // 37 days * 24 hours / day * 60 minutes / hour * 60 seconds / minute 
-    val profileExpiration = 37 * 24 * 60 * 60
+    // 6 days * 24 hours / day * 60 minutes / hour * 60 seconds / minute 
+    val profileExpiration = 6 * 24 * 60 * 60
     userProfiles.foreachPartition { partition =>
       val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
       try {
