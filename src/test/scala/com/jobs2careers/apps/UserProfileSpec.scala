@@ -8,7 +8,14 @@ import org.apache.spark.sql.{ DataFrame, SQLContext }
 import org.scalatest.Matchers._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfter, FunSpec }
-import com.redis._
+import redis.RedisClient
+import akka.actor.ActorSystem
+import akka.util.ByteString
+import redis.{RedisClientMasterSlaves, RedisServer}
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.JavaConverters._
+import scala.concurrent.{Await,Future}
 import play.api.libs.json.{ JsValue, Json }
 import com.jobs2careers.utilities.SharedSparkContext
 import org.joda.time.DateTime

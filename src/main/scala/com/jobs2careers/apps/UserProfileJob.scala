@@ -6,7 +6,13 @@ import org.apache.spark.sql.GroupedData
 import org.apache.spark.sql.types.StructType
 import org.joda.time.DateTime
 import com.jobs2careers.base.RedisConfig
-import redis._
+import redis.RedisClient
+import akka.actor.ActorSystem
+import akka.util.ByteString
+import redis.{RedisClientMasterSlaves, RedisServer}
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.JavaConverters._
 import play.api.libs.json._
 import org.apache.spark.SparkContext._
 import org.apache.spark.SparkConf
@@ -16,9 +22,6 @@ import org.apache.spark.rdd._
 import org.joda.time._
 import org.apache.spark.sql.SQLContext
 import scala.concurrent.{Await,Future}
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConverters._
 import com.jobs2careers.utils._
 import scala.collection._
 //JSON structure
