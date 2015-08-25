@@ -6,7 +6,7 @@ import org.apache.spark.sql.GroupedData
 import org.apache.spark.sql.types.StructType
 import org.joda.time.DateTime
 import com.jobs2careers.base.RedisConfig
-import com.redis._
+import redis._
 import play.api.libs.json._
 import org.apache.spark.SparkContext._
 import org.apache.spark.SparkConf
@@ -15,7 +15,12 @@ import com.jobs2careers.apps._
 import org.apache.spark.rdd._
 import org.joda.time._
 import org.apache.spark.sql.SQLContext
-
+import scala.concurrent.{Await,Future}
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.JavaConverters._
+import com.jobs2careers.utils._
+import scala.collection._
 //JSON structure
 //{
 //    "userId": "wenjing@jobs2careers.com",
@@ -45,12 +50,12 @@ case class UserProfile(userId: String, mailImpressions: Seq[MailImpressions])
 /**
  * Created by wenjing on 7/1/15.
  */
-object UserProfileJob extends RedisConfig {
+object UserProfileJob extends RedisConfig with LogLike  {
 
   def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("Mail User Recommendation Profiles")
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val sc = new SparkContext(conf)
+    val sc = new SparkContext(conf);
     val sqlContext = new SQLContext(sc)
 
     //Input
@@ -74,7 +79,7 @@ object UserProfileJob extends RedisConfig {
 
     sc.stop()
   }
-
+  implicit val akkaSystem = akka.actor.ActorSystem()
   implicit val mailImpressionsFormat = Json.format[MailImpressions]
   implicit val profileFormat = Json.format[UserProfile]
 
@@ -107,23 +112,38 @@ object UserProfileJob extends RedisConfig {
     // 6 days * 24 hours / day * 60 minutes / hour * 60 seconds / minute 
     val profileExpiration = 6 * 24 * 60 * 60
     userProfiles.foreachPartition { partition =>
-      val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
+      //val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
+       val redis:RedisClient = RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
+       val futures =  mutable.MutableList[Future[Boolean]]();
       try {
         partition.foreach {
           case (profile: UserProfile) =>
-            val userId = profile.userId
-            val jsonstr = serialize(profile)
-            redis.setex(userId, profileExpiration, jsonstr)
+            val userId:String = profile.userId
+            val jsonstr:String = serialize(profile)
+            val returnedfuture=PutProfileRedis(userId,profileExpiration,redis,jsonstr);
+            futures +=returnedfuture
+            //  redis.setex(userId, profileExpiration, jsonstr)
+            
         }
-      } finally { redis.quit }
+      } finally 
+      { 
+        val f = Future.sequence(futures.toList)
+        Await.ready(f, 5 seconds)
+        redis.quit 
+      }
     }
   }
-
+  def  PutProfileRedis(key:String,exp:Int,redisclient:RedisClient,value:String):Future[Boolean]={
+    val future = redisclient.setex(key, exp, value);
+    future 
+  }
+ 
   def serialize(profile: UserProfile): String = {
     val json = Json.toJson(profile)
     Json.stringify(json)
   }
-
+   
+  
   def deserialize(json: String): Option[UserProfile] = {
     val jsonValue = Json.parse(json)
     jsonValue.validate[UserProfile] match {
