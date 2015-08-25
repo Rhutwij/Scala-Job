@@ -10,15 +10,17 @@ val sparkVersion = "1.4.1"
 
 //Resolvers
 resolvers ++= Seq(
-  "Typesafe" at "http://repo.typesafe.com/typesafe/releases/"
+  "Typesafe" at "http://repo.typesafe.com/typesafe/releases/",
+  "rediscala" at "http://dl.bintray.com/etaty/maven"
 )
 
 // managed libraries
 libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-    "net.debasishg" %% "redisclient" % "3.0",
+    "com.etaty.rediscala" %% "rediscala" % "1.4.0",
     "com.typesafe.play" % "play-json_2.10" % "2.2.1",
+    libraryDependencies += "com.typesafe" % "config" % "1.3.0",
     "joda-time" % "joda-time" % "2.8.1"
 )
 
