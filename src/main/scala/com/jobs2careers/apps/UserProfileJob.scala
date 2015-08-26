@@ -61,8 +61,8 @@ object UserProfileJob extends RedisConfig with LogLike {
   def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("Mail User Recommendation Profiles")
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val sc = new SparkContext(conf);
-    val sqlContext = new SQLContext(sc)
+    val sc:SparkContext = new SparkContext(conf);
+    val sqlContext : SQLContext= new SQLContext(sc)
 
     //Input
     val numDays = if (args.length > 0) args(0).toInt else 15
