@@ -9,7 +9,7 @@ import com.jobs2careers.base.RedisConfig
 import redis.RedisClient
 import akka.actor.ActorSystem
 import akka.util.ByteString
-import redis.{RedisClientMasterSlaves, RedisServer}
+import redis.{ RedisClientMasterSlaves, RedisServer }
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConverters._
@@ -21,9 +21,12 @@ import com.jobs2careers.apps._
 import org.apache.spark.rdd._
 import org.joda.time._
 import org.apache.spark.sql.SQLContext
-import scala.concurrent.{Await,Future}
+import scala.concurrent.{ Await, Future }
 import com.jobs2careers.utils._
 import scala.collection._
+import scala.util.Try
+import java.util.concurrent.TimeoutException
+import scala.concurrent.duration._
 //JSON structure
 //{
 //    "userId": "wenjing@jobs2careers.com",
@@ -53,7 +56,7 @@ case class UserProfile(userId: String, mailImpressions: Seq[MailImpressions])
 /**
  * Created by wenjing on 7/1/15.
  */
-object UserProfileJob extends RedisConfig with LogLike  {
+object UserProfileJob extends RedisConfig with LogLike {
 
   def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("Mail User Recommendation Profiles")
@@ -114,39 +117,53 @@ object UserProfileJob extends RedisConfig with LogLike  {
   def transport(userProfiles: RDD[UserProfile]): Unit = {
     // 6 days * 24 hours / day * 60 minutes / hour * 60 seconds / minute 
     val profileExpiration = 6 * 24 * 60 * 60
-    userProfiles.foreachPartition { partition =>
+    val UserProfilesMapRDDs: RDD[Boolean] = userProfiles.mapPartitions { partition =>
       //val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
-       val redis:RedisClient = RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
-       val futures =  mutable.MutableList[Future[Boolean]]();
+      val redis: RedisClient = RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
       try {
-        partition.foreach {
+        val RedisFutureSets = partition.map {
           case (profile: UserProfile) =>
-            val userId:String = profile.userId
-            val jsonstr:String = serialize(profile)
-            val returnedfuture=PutProfileRedis(userId,profileExpiration,redis,jsonstr);
-            futures +=returnedfuture
-            //  redis.setex(userId, profileExpiration, jsonstr)
-            
+            val userId: String = profile.userId
+            val jsonstr: String = serialize(profile)
+            val returnedfuture: Future[Boolean] = PutProfileRedis(userId, profileExpiration, redis, jsonstr);
+            returnedfuture
         }
-      } finally 
-      { 
-        val f = Future.sequence(futures.toList)
-        Await.ready(f, 5 seconds)
-        redis.quit 
+        val listOfFutures: List[Future[Boolean]] = RedisFutureSets.toList;
+        val finalFutureList: Future[List[Boolean]] = Future.sequence(listOfFutures)
+        val successes: List[Boolean] = Await.result(finalFutureList, 1 hours)
+        val numSuccesses: List[Boolean] = successes.map { s => s.booleanValue() }.filter { value => value.==(true) }
+        numSuccesses.toIterator
+        //        
+        //        RedisFutureSets
+      } finally {
+        redis.quit
       }
     }
+    UserProfilesMapRDDs.count()
   }
-  def  PutProfileRedis(key:String,exp:Int,redisclient:RedisClient,value:String):Future[Boolean]={
-    val future = redisclient.setex(key, exp, value);
-    future 
+
+  def PutProfileRedis(key: String, exp: Int, redisclient: RedisClient, value: String): Future[Boolean] = {
+    //kick it three times max
+
+    val future: Future[Boolean] = redisclient.setex(key, exp, value) recover {
+      case _ =>
+        val attempt2: Future[Boolean] = redisclient.setex(key, exp, value) recover {
+          case _ =>
+            val attempt3: Future[Boolean] = redisclient.setex(key, exp, value)
+            Await.result(attempt3, 6 seconds)
+        }
+        
+        Await.result(attempt2, 10 seconds)
+    }
+
+    future
   }
- 
+
   def serialize(profile: UserProfile): String = {
     val json = Json.toJson(profile)
     Json.stringify(json)
   }
-   
-  
+
   def deserialize(json: String): Option[UserProfile] = {
     val jsonValue = Json.parse(json)
     jsonValue.validate[UserProfile] match {
@@ -154,7 +171,7 @@ object UserProfileJob extends RedisConfig with LogLike  {
         Some(s.get)
       }
       case e: JsError => {
-        println(s"Unabel to deserialize user profile $json because $e")
+        println(s"Unable to deserialize user profile $json because $e")
         None
       }
     }
