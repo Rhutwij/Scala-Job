@@ -70,6 +70,18 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
       profiles.count() should be(22)
     }
 
+    it("should work with multiple timestamps") {
+      val multipleTimestampsLog = createDataFrame("fixtures/different-times.log")
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(multipleTimestampsLog)
+
+      profiles.collect() foreach { println(_) }
+      profiles.count() should be(3)
+      val lnProfile: RDD[UserProfile] = profiles.filter { profile => profile.userId == "lnathnp@hotmail.com" }
+      lnProfile.count should be(1)
+      val lnProfileLocal: UserProfile = lnProfile.collect()(0)
+      lnProfileLocal.mailImpressions.length should be(1)
+    }
+
     it("should serialize to JSON") {
       //{
       //    "userId": "wenjing@jobs2careers.com",
@@ -104,7 +116,7 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
     }
     it("should give me the output in JSON format") {
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
-//      profiles.foreach { println }
+      //      profiles.foreach { println }
     }
   }
 }

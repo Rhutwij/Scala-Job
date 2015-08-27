@@ -83,17 +83,14 @@ object UserProfileJob extends RedisConfig {
     val emailToImpressionsDf: DataFrame = mailUpdateDataFrame.select(
       mailUpdateDataFrame("email"), mailUpdateDataFrame("impressions.id"), mailUpdateDataFrame("timestamp")).where(mailUpdateDataFrame("timestamp").isNotNull).where(mailUpdateDataFrame("timestamp").notEqual("null"))
 
-    //in 1.4, this will be available off of row
-    val fieldNames: Map[String, Int] = emailToImpressionsDf.schema.fieldNames.zipWithIndex.toMap
-
     val userProfiles: RDD[(String, UserProfile)] = emailToImpressionsDf map { row =>
       // in 1.4, we can do the following
       // val email = row.getAs[String]("email")
       // val impressions = row.getAs[Seq[String]]("id")
-      val email = row.getAs[String](fieldNames("email"))
-      val impressions: Seq[String] = row.getAs[Seq[String]](fieldNames("id"))
+      val email = row.getAs[String]("email")
+      val impressions: Seq[String] = row.getAs[Seq[String]]("id")
       val longImpressions: Seq[Long] = impressions.map { _.toLong }
-      val sent = row.getAs[String](fieldNames("timestamp"))
+      val sent = row.getAs[String]("timestamp")
       (email, UserProfile(email, Seq(MailImpressions(sent, longImpressions))))
     }
     val userIdToUserProfilesCombined = userProfiles.reduceByKey { (p1, p2) =>
