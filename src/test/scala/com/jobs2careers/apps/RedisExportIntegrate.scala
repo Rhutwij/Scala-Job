@@ -8,9 +8,17 @@ import org.apache.spark.sql.{ DataFrame, SQLContext }
 import org.scalatest.Matchers._
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfter, FunSpec }
-import com.redis._
+import redis.RedisClient
+import akka.actor.ActorSystem
+import akka.util.ByteString
+import redis.{ RedisClientMasterSlaves, RedisServer }
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.JavaConverters._
+import scala.concurrent.{ Await, Future }
 import play.api.libs.json.{ JsValue, Json }
 import com.jobs2careers.utilities.SharedSparkContext
+import com.jobs2careers.utils._
 
 /**
  * Example ScalaTest
@@ -27,10 +35,11 @@ import com.jobs2careers.utilities.SharedSparkContext
  * You can run tests by right clicking on the class, or any of the it or
  * describe blocks.
  */
-class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkContext with RedisConfig {
+class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkContext with RedisConfig with LogLike {
   private val fixture = "fixtures/sample_mail_update2.log"
   private var sqlContext: SQLContext = _
   private var mailUpdateDataFrame: DataFrame = _
+  implicit val akkaSystem = akka.actor.ActorSystem()
 
   before {
     sqlContext = new SQLContext(sc)
@@ -47,11 +56,29 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
     val fixturesPath = fixtureFile.getPath
     mailUpdateDataFrame = sqlContext.jsonFile(fixturesPath)
   }
+  def getValue(key: String, redisclient: RedisClient): Option[String] = {
+    val future = redisclient.get(key)
+    future onFailure {
+      case e => {
+        logger.error("Fetch to fetch the value from ElastiCache: " + e.getMessage)
+      }
+    }
+    Await.result(future, 2 seconds) match {
+      case Some(v: ByteString) => {
+        logger.debug("Receiving the result from remote: " + new String(v.toArray))
+        Some(new String(v.toArray))
+      }
+      case _ => {
+        logger.error("Get Wrong format from ElastiCache.")
+        None
+      }
+    }
+  }
 
   describe("Integrate UserProfiles to Redis Database") {
     it("should integrate with Redis") {
       val testUser = "joetorres0859@jobs2careers.com"
-      val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
+      val redis = RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
 
       //clean up from previous run
       redis.del(testUser)
@@ -59,7 +86,7 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
       UserProfileJob.transport(profiles)
 
-      val userProfileJson: Option[String] = redis.get(testUser)
+      val userProfileJson: Option[String] = getValue(testUser, redis)
       //      val jobs = Json.parse(jobslist.get).as[Seq[String]]
       userProfileJson.get should include("1839849788")
       userProfileJson.get should include("4123")
@@ -78,7 +105,7 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
       UserProfileJob.transport(profiles)
 
-      val userProfileJson: Option[String] = redis.get(testUser)
+      val userProfileJson: Option[String] = getValue(testUser, redis)
       //      val jobs = Json.parse(jobslist.get).as[Seq[String]]
       userProfileJson.get should include("1839849788")
       userProfileJson.get should include("4123")

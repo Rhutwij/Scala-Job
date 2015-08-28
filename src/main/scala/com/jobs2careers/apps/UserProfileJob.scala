@@ -6,7 +6,13 @@ import org.apache.spark.sql.GroupedData
 import org.apache.spark.sql.types.StructType
 import org.joda.time.DateTime
 import com.jobs2careers.base.RedisConfig
-import com.redis._
+import redis.RedisClient
+import akka.actor.ActorSystem
+import akka.util.ByteString
+import redis.{ RedisClientMasterSlaves, RedisServer }
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.collection.JavaConverters._
 import play.api.libs.json._
 import org.apache.spark.SparkContext._
 import org.apache.spark.SparkConf
@@ -15,7 +21,12 @@ import com.jobs2careers.apps._
 import org.apache.spark.rdd._
 import org.joda.time._
 import org.apache.spark.sql.SQLContext
-
+import scala.concurrent.{ Await, Future }
+import com.jobs2careers.utils._
+import scala.collection._
+import scala.util.Try
+import java.util.concurrent.TimeoutException
+import scala.concurrent.duration._
 //JSON structure
 //{
 //    "userId": "wenjing@jobs2careers.com",
@@ -45,13 +56,13 @@ case class UserProfile(userId: String, mailImpressions: Seq[MailImpressions])
 /**
  * Created by wenjing on 7/1/15.
  */
-object UserProfileJob extends RedisConfig {
+object UserProfileJob extends RedisConfig with LogLike {
 
   def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("Mail User Recommendation Profiles")
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val sc = new SparkContext(conf)
-    val sqlContext = new SQLContext(sc)
+    val sc: SparkContext = new SparkContext(conf);
+    val sqlContext: SQLContext = new SQLContext(sc)
 
     //Input
     val numDays = if (args.length > 0) args(0).toInt else 15
@@ -74,7 +85,7 @@ object UserProfileJob extends RedisConfig {
 
     sc.stop()
   }
-
+  implicit val akkaSystem = akka.actor.ActorSystem()
   implicit val mailImpressionsFormat = Json.format[MailImpressions]
   implicit val profileFormat = Json.format[UserProfile]
 
@@ -103,20 +114,49 @@ object UserProfileJob extends RedisConfig {
     userIdToUserProfilesCombined.map { case (_, userProfile) => userProfile }
   }
 
-  def transport(userProfiles: RDD[UserProfile]): Unit = {
+  def transport(userProfiles: RDD[UserProfile]): Long = {
     // 6 days * 24 hours / day * 60 minutes / hour * 60 seconds / minute 
     val profileExpiration = 6 * 24 * 60 * 60
-    userProfiles.foreachPartition { partition =>
-      val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
+    val userProfilesMapRDDs: RDD[Boolean] = userProfiles.mapPartitions { partition:Iterator[UserProfile] =>
+      val redis: RedisClient = RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
       try {
-        partition.foreach {
+        val redisFutureSets: Iterator[Future[Boolean]] = partition.map {
           case (profile: UserProfile) =>
-            val userId = profile.userId
-            val jsonstr = serialize(profile)
-            redis.setex(userId, profileExpiration, jsonstr)
+            val userId: String = profile.userId
+            val jsonstr: String = serialize(profile)
+            val returnedfuture: Future[Boolean] = PutProfileRedis(userId, profileExpiration, redis, jsonstr);
+            returnedfuture
         }
-      } finally { redis.quit }
+        val listOfFutures: List[Future[Boolean]] = redisFutureSets.toList;
+        val finalFutureList: Future[List[Boolean]] = Future.sequence(listOfFutures)
+        val successes: List[Boolean] = Await.result(finalFutureList, 1 hours)
+        val numSuccesses: List[Boolean] = successes.map { s => s.booleanValue() }.filter { value => value.==(true) }
+        numSuccesses.toIterator
+      } finally {
+        redis.quit
+      }
     }
+    val totalUserProfilesSetSuccessfully: Long = userProfilesMapRDDs.count()
+    val totalUserProfiles: Long = userProfiles.count()
+    logger.info("Total UserProfiles:" + totalUserProfiles + " Actual Futures Set" + totalUserProfilesSetSuccessfully)
+    totalUserProfiles
+  }
+
+  def PutProfileRedis(key: String, exp: Int, redisClient: RedisClient, value: String): Future[Boolean] = {
+    //kick it three times max
+
+    val future: Future[Boolean] = redisClient.setex(key, exp, value) recover {
+      case _ =>
+        val attempt2: Future[Boolean] = redisClient.setex(key, exp, value) recover {
+          case _ =>
+            val attempt3: Future[Boolean] = redisClient.setex(key, exp, value)
+            Await.result(attempt3, 6 seconds)
+        }
+
+        Await.result(attempt2, 10 seconds)
+    }
+
+    future
   }
 
   def serialize(profile: UserProfile): String = {
@@ -131,7 +171,7 @@ object UserProfileJob extends RedisConfig {
         Some(s.get)
       }
       case e: JsError => {
-        println(s"Unabel to deserialize user profile $json because $e")
+        println(s"Unable to deserialize user profile $json because $e")
         None
       }
     }
