@@ -142,14 +142,14 @@ object UserProfileJob extends RedisConfig with LogLike {
     totalUserProfiles
   }
 
-  def PutProfileRedis(key: String, exp: Int, redisclient: RedisClient, value: String): Future[Boolean] = {
+  def PutProfileRedis(key: String, exp: Int, redisClient: RedisClient, value: String): Future[Boolean] = {
     //kick it three times max
 
-    val future: Future[Boolean] = redisclient.setex(key, exp, value) recover {
+    val future: Future[Boolean] = redisClient.setex(key, exp, value) recover {
       case _ =>
-        val attempt2: Future[Boolean] = redisclient.setex(key, exp, value) recover {
+        val attempt2: Future[Boolean] = redisClient.setex(key, exp, value) recover {
           case _ =>
-            val attempt3: Future[Boolean] = redisclient.setex(key, exp, value)
+            val attempt3: Future[Boolean] = redisClient.setex(key, exp, value)
             Await.result(attempt3, 6 seconds)
         }
 
