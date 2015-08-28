@@ -56,6 +56,7 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
   }
 
   describe("UserProfileApp") {
+
     it("should return the correct number of profiles") {
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
 
@@ -70,16 +71,36 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
       profiles.count() should be(22)
     }
 
-    it("should work with multiple timestamps") {
-      val multipleTimestampsLog = createDataFrame("fixtures/different-times.log")
-      val profiles: RDD[UserProfile] = UserProfileJob.transform(multipleTimestampsLog)
 
-      profiles.collect() foreach { println(_) }
+    it("should work with multiple timestamps") {
+      val multipleTimestampsLog: DataFrame = createDataFrame("fixtures/different-times.log")
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(multipleTimestampsLog)
       profiles.count() should be(3)
+
       val lnProfile: RDD[UserProfile] = profiles.filter { profile => profile.userId == "lnathnp@hotmail.com" }
       lnProfile.count should be(1)
+
       val lnProfileLocal: UserProfile = lnProfile.collect()(0)
-      lnProfileLocal.mailImpressions.length should be(1)
+      lnProfileLocal.mailImpressions.length should be(2)
+    }
+
+    it("should work with null impression") {
+      val timestampLogs = createDataFrame("fixtures/null-impression_ids.log")
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(timestampLogs)
+      profiles.count() should be(3)
+    }
+
+    it("It should generate a specific json format records for Wenjing from log files"){
+      val wenjingLogs = createDataFrame("fixtures/wenjing-impressions.log")
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(wenjingLogs)
+      profiles.collect().foreach{println}
+      profiles.count() should be (1)
+
+      val jsonprofiles = profiles.map{ row =>
+        UserProfileJob.serialize(row)
+      }
+      jsonprofiles.collect().foreach{println}
+      jsonprofiles.count() should be (1)
     }
 
     it("should serialize to JSON") {
@@ -118,5 +139,6 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
       //      profiles.foreach { println }
     }
+
   }
 }

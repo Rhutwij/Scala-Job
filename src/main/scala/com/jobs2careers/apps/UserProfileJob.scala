@@ -2,19 +2,16 @@ package com.jobs2careers.apps
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.GroupedData
-import org.apache.spark.sql.types.StructType
-import org.joda.time.DateTime
+
 import com.jobs2careers.base.RedisConfig
 import com.redis._
 import play.api.libs.json._
-import org.apache.spark.SparkContext._
-import org.apache.spark.SparkConf
-import org.apache.spark.SparkContext
-import com.jobs2careers.apps._
-import org.apache.spark.rdd._
 import org.joda.time._
 import org.apache.spark.sql.SQLContext
+
+import org.apache.spark.SparkContext
+import org.apache.spark.SparkConf
+
 
 //JSON structure
 //{
@@ -40,12 +37,14 @@ import org.apache.spark.sql.SQLContext
 //}
 
 case class MailImpressions(sent: String, jobs: Seq[Long])
+//TODO use iterable instead of sequence
+//case class UserProfile(userId: String, mailImpressions: Iterable[MailImpressions])
 case class UserProfile(userId: String, mailImpressions: Seq[MailImpressions])
 
 /**
  * Created by wenjing on 7/1/15.
  */
-object UserProfileJob extends RedisConfig {
+object UserProfileJob extends RedisConfig{
 
   def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("Mail User Recommendation Profiles")
@@ -79,25 +78,58 @@ object UserProfileJob extends RedisConfig {
   implicit val profileFormat = Json.format[UserProfile]
 
   def transform(mailUpdateDataFrame: DataFrame): RDD[UserProfile] = {
-    import mailUpdateDataFrame.sqlContext.implicits._
-    val emailToImpressionsDf: DataFrame = mailUpdateDataFrame.select(
-      mailUpdateDataFrame("email"), mailUpdateDataFrame("impressions.id"), mailUpdateDataFrame("timestamp")).where(mailUpdateDataFrame("timestamp").isNotNull).where(mailUpdateDataFrame("timestamp").notEqual("null"))
 
+    // select the useful information
+    val emailToImpressionsDf: DataFrame = mailUpdateDataFrame.select(
+      mailUpdateDataFrame("email"), mailUpdateDataFrame("impressions.id"),
+      mailUpdateDataFrame("timestamp")).where(mailUpdateDataFrame("timestamp").isNotNull).where(mailUpdateDataFrame("timestamp").notEqual("null"))
+
+    /*
     val userProfiles: RDD[(String, UserProfile)] = emailToImpressionsDf map { row =>
       // in 1.4, we can do the following
       // val email = row.getAs[String]("email")
       // val impressions = row.getAs[Seq[String]]("id")
       val email = row.getAs[String]("email")
-      val impressions: Seq[String] = row.getAs[Seq[String]]("id")
+      val impressions: Seq[String] = row.getAs[Seq[String]]("id").filter(e => e != "null" )
       val longImpressions: Seq[Long] = impressions.map { _.toLong }
-      val sent = row.getAs[String]("timestamp")
+      val sent = row.getAs[String]("timestamp").substring(0,10)
       (email, UserProfile(email, Seq(MailImpressions(sent, longImpressions))))
     }
+*/
+    /*
     val userIdToUserProfilesCombined = userProfiles.reduceByKey { (p1, p2) =>
       p1.copy(mailImpressions = p1.mailImpressions ++ p2.mailImpressions)
     }
+    */
 
-    userIdToUserProfilesCombined.map { case (_, userProfile) => userProfile }
+    val userProfiles: RDD[(String, Seq[MailImpressions])] = emailToImpressionsDf map { row =>
+      val email = row.getAs[String]("email")
+      val impressions: Seq[String] = row.getAs[Seq[String]]("id").filter(e => e != "null")
+      val longImpressions: Seq[Long] = impressions.map {
+        _.toLong
+      }
+      val sent = row.getAs[String]("timestamp").substring(0, 10)
+      (email, Seq(MailImpressions(sent, longImpressions)))
+    }
+
+    val userIdToUserProfilesCombined: RDD[(String, Seq[MailImpressions])] =
+      userProfiles.reduceByKey((q1, q2) => q1 ++ q2)
+
+
+    // Impressions is categorized on user level.
+    // Now remove redundant sent time
+    val userIdToUserProfilesMerged: RDD[UserProfile] = userIdToUserProfilesCombined.map {
+      case (email: String, impressions: Seq[MailImpressions]) =>
+        val sentImpressions: Map[String, Seq[MailImpressions]] = impressions.groupBy(impressions => impressions.sent)
+        val combinedSentImpressions = sentImpressions mapValues { listMailImpressions =>
+          listMailImpressions reduce { (a, b) =>
+            a.copy(jobs = a.jobs ++ b.jobs)
+          }
+        }
+        val userImpressions = combinedSentImpressions.values.toList
+        UserProfile(email, userImpressions)
+    }
+    userIdToUserProfilesMerged
   }
 
   def transport(userProfiles: RDD[UserProfile]): Unit = {
