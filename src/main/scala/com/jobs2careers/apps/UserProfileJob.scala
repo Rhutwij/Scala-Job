@@ -61,8 +61,8 @@ object UserProfileJob extends RedisConfig with LogLike {
   def main(args: Array[String]) {
     val conf = new SparkConf().setAppName("Mail User Recommendation Profiles")
     conf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-    val sc:SparkContext = new SparkContext(conf);
-    val sqlContext : SQLContext= new SQLContext(sc)
+    val sc: SparkContext = new SparkContext(conf);
+    val sqlContext: SQLContext = new SQLContext(sc)
 
     //Input
     val numDays = if (args.length > 0) args(0).toInt else 15
@@ -114,32 +114,32 @@ object UserProfileJob extends RedisConfig with LogLike {
     userIdToUserProfilesCombined.map { case (_, userProfile) => userProfile }
   }
 
-  def transport(userProfiles: RDD[UserProfile]): Unit = {
+  def transport(userProfiles: RDD[UserProfile]): Long = {
     // 6 days * 24 hours / day * 60 minutes / hour * 60 seconds / minute 
     val profileExpiration = 6 * 24 * 60 * 60
-    val UserProfilesMapRDDs: RDD[Boolean] = userProfiles.mapPartitions { partition =>
-      //val redis = new RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
+    val userProfilesMapRDDs: RDD[Boolean] = userProfiles.mapPartitions { partition:Iterator[UserProfile] =>
       val redis: RedisClient = RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
       try {
-        val RedisFutureSets = partition.map {
+        val redisFutureSets: Iterator[Future[Boolean]] = partition.map {
           case (profile: UserProfile) =>
             val userId: String = profile.userId
             val jsonstr: String = serialize(profile)
             val returnedfuture: Future[Boolean] = PutProfileRedis(userId, profileExpiration, redis, jsonstr);
             returnedfuture
         }
-        val listOfFutures: List[Future[Boolean]] = RedisFutureSets.toList;
+        val listOfFutures: List[Future[Boolean]] = redisFutureSets.toList;
         val finalFutureList: Future[List[Boolean]] = Future.sequence(listOfFutures)
         val successes: List[Boolean] = Await.result(finalFutureList, 1 hours)
         val numSuccesses: List[Boolean] = successes.map { s => s.booleanValue() }.filter { value => value.==(true) }
         numSuccesses.toIterator
-        //        
-        //        RedisFutureSets
       } finally {
         redis.quit
       }
     }
-    UserProfilesMapRDDs.count()
+    val totalUserProfilesSetSuccessfully: Long = userProfilesMapRDDs.count()
+    val totalUserProfiles: Long = userProfiles.count()
+    logger.info("Total UserProfiles:" + totalUserProfiles + " Actual Futures Set" + totalUserProfilesSetSuccessfully)
+    totalUserProfiles
   }
 
   def PutProfileRedis(key: String, exp: Int, redisclient: RedisClient, value: String): Future[Boolean] = {
@@ -152,7 +152,7 @@ object UserProfileJob extends RedisConfig with LogLike {
             val attempt3: Future[Boolean] = redisclient.setex(key, exp, value)
             Await.result(attempt3, 6 seconds)
         }
-        
+
         Await.result(attempt2, 10 seconds)
     }
 
