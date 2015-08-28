@@ -9,8 +9,8 @@ object DataRegistry {
 
   val fmt = DateTimeFormat.forPattern("yyyy/MM/dd/")
 
-  def mail(sqlContext: SQLContext, previousDays: Int): DataFrame = {
-    val logPaths = datePaths(previousDays, "s3n://jiantest/mail/", "mail/*.bz2")
+  def mail(sqlContext: SQLContext, previousDays: Int, dateEnd: LocalDate = new LocalDate): DataFrame = {
+    val logPaths = datePaths(previousDays, "s3n://jiantest/mail/", "*/*.bz2", dateEnd)
     load(sqlContext, logPaths)
   }
 
