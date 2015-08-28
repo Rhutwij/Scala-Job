@@ -1,18 +1,11 @@
 package com.jobs2careers.apps
 
-import com.jobs2careers.base.{ SparkLocalConfig, RedisConfig }
-import com.jobs2careers.utilities.ClassPathResourceLoader
-import org.apache.spark.SparkContext
+import com.jobs2careers.base.RedisConfig
+import com.jobs2careers.utilities.{ClassPathResourceLoader, SharedSparkContext}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ DataFrame, SQLContext }
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.scalatest.Matchers._
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfter, FunSpec }
-import com.redis._
-import play.api.libs.json.{ JsValue, Json }
-import com.jobs2careers.utilities.SharedSparkContext
-import org.joda.time.DateTime
-import org.joda.time.format.ISODateTimeFormat
+import org.scalatest.{BeforeAndAfter, FunSpec}
 
 /**
  * Example ScalaTest
@@ -93,13 +86,11 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
     it("It should generate a specific json format records for Wenjing from log files"){
       val wenjingLogs = createDataFrame("fixtures/wenjing-impressions.log")
       val profiles: RDD[UserProfile] = UserProfileJob.transform(wenjingLogs)
-      profiles.collect().foreach{println}
       profiles.count() should be (1)
 
       val jsonprofiles = profiles.map{ row =>
         UserProfileJob.serialize(row)
       }
-      jsonprofiles.collect().foreach{println}
       jsonprofiles.count() should be (1)
     }
 
