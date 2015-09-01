@@ -14,32 +14,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-//JSON structure
-//{
-//    "userId": "wenjing@jobs2careers.com",
-//    "mailImpressions": [
-//        {
-//            "sent": "2015-07-22T16:34:41.000Z",
-//            "jobs": [
-//                1,
-//                2,
-//                3
-//            ]
-//        },
-//        {
-//            "sent": "2015-07-21T16:34:41.000Z",
-//            "jobs": [
-//                4,
-//                5,
-//                6
-//            ]
-//        }
-//    ]
-//}
 
 case class MailImpressions(sent: String, jobs: Seq[Long])
 //TODO use iterable instead of sequence
-//case class UserProfile(userId: String, mailImpressions: Iterable[MailImpressions])
 case class UserProfile(userId: String, mailImpressions: Seq[MailImpressions])
 
 /**
@@ -85,24 +62,6 @@ object UserProfileJob extends RedisConfig with LogLike {
     val emailToImpressionsDf: DataFrame = mailUpdateDataFrame.select(
       mailUpdateDataFrame("email"), mailUpdateDataFrame("impressions.id"),
       mailUpdateDataFrame("timestamp")).where(mailUpdateDataFrame("timestamp").isNotNull).where(mailUpdateDataFrame("timestamp").notEqual("null"))
-
-    /*
-    val userProfiles: RDD[(String, UserProfile)] = emailToImpressionsDf map { row =>
-      // in 1.4, we can do the following
-      // val email = row.getAs[String]("email")
-      // val impressions = row.getAs[Seq[String]]("id")
-      val email = row.getAs[String]("email")
-      val impressions: Seq[String] = row.getAs[Seq[String]]("id").filter(e => e != "null" )
-      val longImpressions: Seq[Long] = impressions.map { _.toLong }
-      val sent = row.getAs[String]("timestamp").substring(0,10)
-      (email, UserProfile(email, Seq(MailImpressions(sent, longImpressions))))
-    }
-*/
-    /*
-    val userIdToUserProfilesCombined = userProfiles.reduceByKey { (p1, p2) =>
-      p1.copy(mailImpressions = p1.mailImpressions ++ p2.mailImpressions)
-    }
-    */
 
     val userProfiles: RDD[(String, Seq[MailImpressions])] = emailToImpressionsDf map { row =>
       val email = row.getAs[String]("email")
