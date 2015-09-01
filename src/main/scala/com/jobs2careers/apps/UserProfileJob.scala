@@ -2,10 +2,11 @@ package com.jobs2careers.apps
 
 import com.jobs2careers.base.RedisConfig
 import com.jobs2careers.utils._
-import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.{SparkConf, SparkContext}
 import org.joda.time._
+import org.joda.time.format.DateTimeFormat
 import play.api.libs.json._
 import redis.RedisClient
 
@@ -31,13 +32,17 @@ object UserProfileJob extends RedisConfig with LogLike {
     val sc: SparkContext = new SparkContext(conf);
     val sqlContext: SQLContext = new SQLContext(sc)
 
+    val dateFormat = DateTimeFormat.forPattern("yyyy-MM-dd")
+
     //Input
     val numDays = if (args.length > 0) args(0).toInt else 15
+    val dateEnd = if (args.length > 0) dateFormat.parseLocalDate(args(1)) else new LocalDate
 
     //Load the Raw Data
     val userProfiledStart = new LocalDateTime
     println(s"The user profiles generate started at $userProfiledStart")
-    val email_logs = DataRegistry.mail(sqlContext, numDays)
+    logger.info(s"Grabbing logs starting at $dateEnd and $numDays before")
+    val email_logs = DataRegistry.mail(sqlContext, numDays, dateEnd)
 
     // Create profile RDD from raw data dataframe
     val profiles: RDD[UserProfile] = UserProfileJob.transform(email_logs)
@@ -76,7 +81,6 @@ object UserProfileJob extends RedisConfig with LogLike {
     val userIdToUserProfilesCombined: RDD[(String, Seq[MailImpressions])] =
       userProfiles.reduceByKey((q1, q2) => q1 ++ q2)
 
-
     // Impressions is categorized on user level.
     // Now remove redundant sent time
     val userIdToUserProfilesMerged: RDD[UserProfile] = userIdToUserProfilesCombined.map {
@@ -96,7 +100,7 @@ object UserProfileJob extends RedisConfig with LogLike {
   def transport(userProfiles: RDD[UserProfile]): Long = {
     // 6 days * 24 hours / day * 60 minutes / hour * 60 seconds / minute 
     val profileExpiration = 6 * 24 * 60 * 60
-    val userProfilesMapRDDs: RDD[Boolean] = userProfiles.mapPartitions { partition:Iterator[UserProfile] =>
+    val userProfilesMapRDDs: RDD[Boolean] = userProfiles.mapPartitions { partition: Iterator[UserProfile] =>
       val redis: RedisClient = RedisClient(BIG_DATA_REDIS_DB_HOST, BIG_DATA_REDIS_DB_PORT)
       try {
         val redisFutureSets: Iterator[Future[Boolean]] = partition.map {
@@ -150,7 +154,7 @@ object UserProfileJob extends RedisConfig with LogLike {
         Some(s.get)
       }
       case e: JsError => {
-        println(s"Unable to deserialize user profile $json because $e")
+        logger.error(s"Unable to deserialize user profile $json", e)
         None
       }
     }
