@@ -1,25 +1,11 @@
 package com.jobs2careers.apps
 
-import com.jobs2careers.base.{ SparkLocalConfig, RedisConfig }
-import com.jobs2careers.utilities.ClassPathResourceLoader
-import org.apache.spark.SparkContext
+import com.jobs2careers.base.RedisConfig
+import com.jobs2careers.utilities.{ClassPathResourceLoader, SharedSparkContext}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{ DataFrame, SQLContext }
+import org.apache.spark.sql.{DataFrame, SQLContext}
 import org.scalatest.Matchers._
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfter, FunSpec }
-import redis.RedisClient
-import akka.actor.ActorSystem
-import akka.util.ByteString
-import redis.{RedisClientMasterSlaves, RedisServer}
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConverters._
-import scala.concurrent.{Await,Future}
-import play.api.libs.json.{ JsValue, Json }
-import com.jobs2careers.utilities.SharedSparkContext
-import org.joda.time.DateTime
-import org.joda.time.format.ISODateTimeFormat
+import org.scalatest.{BeforeAndAfter, FunSpec}
 
 /**
  * Example ScalaTest
@@ -63,6 +49,7 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
   }
 
   describe("UserProfileApp") {
+
     it("should return the correct number of profiles") {
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
 
@@ -77,29 +64,37 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
       profiles.count() should be(22)
     }
 
-    it("should serialize to JSON") {
-      //{
-      //    "userId": "wenjing@jobs2careers.com",
-      //    "mailImpressions": [
-      //        {
-      //            "sent": "2015-07-22T16:34:41.000Z",
-      //            "jobs": [
-      //                1,
-      //                2,
-      //                3
-      //            ]
-      //        },
-      //        {
-      //            "sent": "2015-07-21T16:34:41.000Z",
-      //            "jobs": [
-      //                4,
-      //                5,
-      //                6
-      //            ]
-      //        }
-      //    ]
-      //}
 
+    it("should work with multiple timestamps") {
+      val multipleTimestampsLog: DataFrame = createDataFrame("fixtures/different-times.log")
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(multipleTimestampsLog)
+      profiles.count() should be(3)
+
+      val lnProfile: RDD[UserProfile] = profiles.filter { profile => profile.userId == "lnathnp@hotmail.com" }
+      lnProfile.count should be(1)
+
+      val lnProfileLocal: UserProfile = lnProfile.collect()(0)
+      lnProfileLocal.mailImpressions.length should be(2)
+    }
+
+    it("should work with null impression") {
+      val timestampLogs = createDataFrame("fixtures/null-impression_ids.log")
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(timestampLogs)
+      profiles.count() should be(3)
+    }
+
+    it("It should generate a specific json format records for Wenjing from log files"){
+      val wenjingLogs = createDataFrame("fixtures/wenjing-impressions.log")
+      val profiles: RDD[UserProfile] = UserProfileJob.transform(wenjingLogs)
+      profiles.count() should be (1)
+
+      val jsonprofiles = profiles.map{ row =>
+        UserProfileJob.serialize(row)
+      }
+      jsonprofiles.count() should be (1)
+    }
+
+    it("should serialize to JSON") {
       val expected = """{"userId":"wenjing@jobs2careers.com","mailImpressions":[{"sent":"2015-07-22T16:34:41.000Z","jobs":[1,2,3]},{"sent":"2015-07-21T16:34:41.000Z","jobs":[4,5,6]}]}"""
 
       val impression1 = MailImpressions("2015-07-22T16:34:41.000Z", Seq(1, 2, 3))
@@ -111,7 +106,7 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
     }
     it("should give me the output in JSON format") {
       val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
-//      profiles.foreach { println }
     }
+
   }
 }
