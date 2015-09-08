@@ -54,18 +54,18 @@ class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkConte
 
     val input = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
 
-    val df: DataFrame = DataRegistry.load(sqlContext, input)
+    val df: DataFrame = DataRegistry.load(sqlContext,sc, input)
 
-    df.count should be(41)
+    df.count should be(88)
   }
 
   it("load null timestamps values") {
 
     val input = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log", s"$fixturesPath/2015/07/15/*.log")
 
-    val df: DataFrame = DataRegistry.load(sqlContext, input)
+    val df: DataFrame = DataRegistry.load(sqlContext,sc, input)
 
-    df.count should be(45)
+    df.count should be(99)
   }
 
   it("be able to load paths even if they don't exist") {
@@ -75,8 +75,8 @@ class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkConte
     val printStream = new PrintStream(capturedOut)
     Console.withOut(printStream) {
       Console.withErr(printStream) {
-        val df: DataFrame = DataRegistry.load(sqlContext, input)
-        df.count should be(41)
+        val df: DataFrame = DataRegistry.load(sqlContext,sc, input)
+        df.count should be(88)
         println(capturedOut)
         capturedOut.toString().length() should be >= 100
       }
@@ -86,13 +86,15 @@ class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkConte
 
   it("read multiple files from previous 2 weeks") {
     val mailImpressionPaths: Seq[String] = DataRegistry.datePaths(3, s"$fixturesPath/", "sample_mail_update.log", new LocalDate(2015, 7, 7))
+    val pubMailImpressionPaths: Seq[String] = DataRegistry.datePaths(3, s"$fixturesPath/", "sample_pubmail_update.log", new LocalDate(2015, 7, 7))
 //    mailImpressionPaths.foreach { println }
-    if (mailImpressionPaths.isEmpty) {
+    if (mailImpressionPaths.isEmpty ||pubMailImpressionPaths.isEmpty ) {
       println("Files do not exist, cannot read files")
     } else {
-      val MailDataFrame = DataRegistry.load(sqlContext, mailImpressionPaths)
-      val profiles = UserProfileJob.transform(MailDataFrame)
-      profiles.count() should be(23)
+      val MailDataFrame = DataRegistry.load(sqlContext,sc, mailImpressionPaths)
+      val pubMailDataFrame = DataRegistry.load(sqlContext,sc, pubMailImpressionPaths)
+      val profiles = FunctionLib.transform(MailDataFrame,pubMailDataFrame)
+      profiles.count() should be(32)
     }
   }
 }
