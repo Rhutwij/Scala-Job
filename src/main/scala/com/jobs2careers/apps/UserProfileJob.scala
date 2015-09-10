@@ -39,11 +39,6 @@ object UserProfileJob extends RunSparkJob {
     val email_logs: DataFrame = DataRegistry.mail(sqlContext, sc, numDays, dateEnd)
     val pub_logs: DataFrame = DataRegistry.pubMail(sqlContext, sc, numDays, dateEnd)
     
-    //getting data and unioning dataframes email and pubemail
-    //val emailDataFrame:DataFrame=FunctionLib.getMailDataFrame(email_logs)
-    //val pubEmailDataFrame:DataFrame=FunctionLib.getPubMailDataFrame(pub_logs)
-    //val unionedMailDataFrame:DataFrame=FunctionLib.unionMailDataFrames(emailDataFrame, pubEmailDataFrame)
-
     // Create profile RDD from raw data dataframe
     val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(email_logs,pub_logs)
 

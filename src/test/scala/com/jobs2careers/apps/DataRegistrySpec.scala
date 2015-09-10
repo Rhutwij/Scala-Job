@@ -89,7 +89,7 @@ class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkConte
     val pubMailImpressionPaths: Seq[String] = DataRegistry.datePaths(3, s"$fixturesPath/", "sample_pubmail_update.log", new LocalDate(2015, 7, 7))
 //    mailImpressionPaths.foreach { println }
     if (mailImpressionPaths.isEmpty ||pubMailImpressionPaths.isEmpty ) {
-      println("Files do not exist, cannot read files")
+      fail("Files do not exist, cannot read files")
     } else {
       val MailDataFrame = DataRegistry.load(sqlContext,sc, mailImpressionPaths)
       val pubMailDataFrame = DataRegistry.load(sqlContext,sc, pubMailImpressionPaths)

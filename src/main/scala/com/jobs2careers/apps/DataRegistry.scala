@@ -40,9 +40,10 @@ object DataRegistry extends LogLike {
   def load(sqlContext: SQLContext, sc: SparkContext, paths: Seq[String]): DataFrame =
     {
 
-      val dataFrames: Seq[RDD[String]] = paths.flatMap { path =>
+      val rawImpressionsData: Seq[RDD[String]] = paths.flatMap { path =>
         try {
           val dataFrame: RDD[String] = sc.textFile(path, 5)
+          //take one to ensure it exists
           dataFrame.take(1)
           Some(dataFrame)
         } catch {
@@ -53,13 +54,15 @@ object DataRegistry extends LogLike {
             None
         }
       }
-      val unionFlatFile: RDD[String] = dataFrames.reduce { (a, b) =>
+      val unionFlatFile: RDD[String] = rawImpressionsData.reduce { (a, b) =>
         a.union(b)
       }
       
       val unionedDataFrame: DataFrame = sqlContext.read.json(unionFlatFile)
+      //check if data is corrupt
       val corruptRecord: Boolean = unionedDataFrame.schema.fieldNames.contains("_corrupt_record")
 
+      //countermeasure for corrupt data..if data is corrupt we only get non corrupt data and still read the file
       if (corruptRecord) {
         logger.info("Corrupt records in file path"+paths.mkString(","))
         unionedDataFrame.where(unionedDataFrame("_corrupt_record").isNull)
