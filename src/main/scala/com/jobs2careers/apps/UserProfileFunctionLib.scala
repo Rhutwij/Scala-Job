@@ -49,9 +49,10 @@ object UserProfileFunctionLib extends LogLike with RedisConfig with HashFunction
       val impressions: Seq[String] = row.getAs[Seq[String]]("id").filter(e => e != "null")
       val longImpressions: Seq[Long] = impressions.map {
         _.toLong
-      }
+      } 
+      val topFiveImpressions: Seq[Long] = longImpressions.slice(0, 5)
       val sent = row.getAs[String]("timestamp").substring(0, 10)
-      (email, Seq(MailImpressions(sent, longImpressions)))
+      (email, Seq(MailImpressions(sent, topFiveImpressions)))
     }
     impressionsTransformedRDD
   }
