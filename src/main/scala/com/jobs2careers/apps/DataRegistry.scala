@@ -42,7 +42,7 @@ object DataRegistry extends LogLike {
 
       val dataFrames: Seq[RDD[String]] = paths.flatMap { path =>
         try {
-          val dataFrame: RDD[String] = sc.textFile(path, 1)
+          val dataFrame: RDD[String] = sc.textFile(path, 5)
           dataFrame.take(1)
           Some(dataFrame)
         } catch {
@@ -56,6 +56,7 @@ object DataRegistry extends LogLike {
       val unionFlatFile: RDD[String] = dataFrames.reduce { (a, b) =>
         a.union(b)
       }
+      
       val unionedDataFrame: DataFrame = sqlContext.read.json(unionFlatFile)
       val corruptRecord: Boolean = unionedDataFrame.schema.fieldNames.contains("_corrupt_record")
 

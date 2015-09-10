@@ -45,10 +45,10 @@ object UserProfileJob extends RunSparkJob {
     //val unionedMailDataFrame:DataFrame=FunctionLib.unionMailDataFrames(emailDataFrame, pubEmailDataFrame)
 
     // Create profile RDD from raw data dataframe
-    val profiles: RDD[UserProfile] = FunctionLib.transform(email_logs,pub_logs)
+    val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(email_logs,pub_logs)
 
     //Upload data to redis
-    FunctionLib.transport(profiles)
+    UserProfileFunctionLib.transport(profiles)
 
     //Check number of profiles (debug)
     val userProfiledFinished: LocalDateTime = new LocalDateTime

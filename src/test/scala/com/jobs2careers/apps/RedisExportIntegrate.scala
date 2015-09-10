@@ -94,8 +94,8 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
       //clean up from previous run
       redis.del(testUser)
 
-      val profiles: RDD[UserProfile] = FunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
-      FunctionLib.transport(profiles)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
+      UserProfileFunctionLib.transport(profiles)
 
       val userProfileJson: Option[String] = getValue(testUser, redis)
       //      val jobs = Json.parse(jobslist.get).as[Seq[String]]
@@ -113,8 +113,8 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
       //clean up from previous run
       redis.set(testUser, "")
 
-      val profiles: RDD[UserProfile] = FunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
-      FunctionLib.transport(profiles)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
+      UserProfileFunctionLib.transport(profiles)
 
       val userProfileJson: Option[String] = getValue(testUser, redis)
       //      val jobs = Json.parse(jobslist.get).as[Seq[String]]

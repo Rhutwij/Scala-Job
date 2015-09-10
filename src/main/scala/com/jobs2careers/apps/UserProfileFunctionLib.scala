@@ -19,7 +19,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import org.apache.commons.codec.digest.DigestUtils
 
-object FunctionLib extends LogLike with RedisConfig with HashFunctions {
+object UserProfileFunctionLib extends LogLike with RedisConfig with HashFunctions {
 
   implicit val akkaSystem = akka.actor.ActorSystem()
   implicit val mailImpressionsFormat = Json.format[MailImpressions]

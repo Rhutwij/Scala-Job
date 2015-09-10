@@ -93,7 +93,7 @@ class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkConte
     } else {
       val MailDataFrame = DataRegistry.load(sqlContext,sc, mailImpressionPaths)
       val pubMailDataFrame = DataRegistry.load(sqlContext,sc, pubMailImpressionPaths)
-      val profiles = FunctionLib.transform(MailDataFrame,pubMailDataFrame)
+      val profiles = UserProfileFunctionLib.transform(MailDataFrame,pubMailDataFrame)
       profiles.count() should be(32)
     }
   }

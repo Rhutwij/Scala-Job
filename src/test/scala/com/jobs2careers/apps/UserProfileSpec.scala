@@ -56,7 +56,7 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
   describe("UserProfileApp") {
 
     it("should return the correct number of profiles") {
-      val profiles: RDD[UserProfile] = FunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
 
       profiles.count() should be(32)
     }
@@ -64,7 +64,7 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
     it("should work with null timestamps") {
       val mailUpdateNull = createDataFrame("fixtures/sample_mail_update_null.log")
 
-      val profiles: RDD[UserProfile] = FunctionLib.transform(mailUpdateNull,pubMailUpdateDataFrame)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(mailUpdateNull,pubMailUpdateDataFrame)
 
       profiles.count() should be(31)
     }
@@ -72,7 +72,7 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
 
     it("should work with multiple timestamps") {
       val multipleTimestampsLog: DataFrame = createDataFrame("fixtures/different-times.log")
-      val profiles: RDD[UserProfile] = FunctionLib.transform(multipleTimestampsLog,pubMailUpdateDataFrame)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(multipleTimestampsLog,pubMailUpdateDataFrame)
       profiles.count() should be(12)
       val testEmail="lnathnp@hotmail.com";
       val lnProfile: RDD[UserProfile] = profiles.filter { profile => profile.userId == testEmail }
@@ -84,17 +84,17 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
 
     it("should work with null impression") {
       val timestampLogs = createDataFrame("fixtures/null-impression_ids.log")
-      val profiles: RDD[UserProfile] = FunctionLib.transform(timestampLogs,pubMailUpdateDataFrame)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(timestampLogs,pubMailUpdateDataFrame)
       profiles.count() should be(12)
     }
 
     it("It should generate a specific json format records for Wenjing from log files"){
       val wenjingLogs = createDataFrame("fixtures/wenjing-impressions.log")
-      val profiles: RDD[UserProfile] = FunctionLib.transform(wenjingLogs,pubMailUpdateDataFrame)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(wenjingLogs,pubMailUpdateDataFrame)
       profiles.count() should be (10)
 
       val jsonprofiles = profiles.map{ row =>
-        FunctionLib.serialize(row)
+        UserProfileFunctionLib.serialize(row)
       }
       jsonprofiles.count() should be (10)
     }
@@ -106,11 +106,11 @@ class UserProfileSpec extends FunSpec with BeforeAndAfter with SharedSparkContex
       val impression2 = MailImpressions("2015-07-21T16:34:41.000Z", Seq(4, 5, 6))
       val profile = UserProfile("wenjing@jobs2careers.com", Seq(impression1, impression2))
 
-      val actual = FunctionLib.serialize(profile)
+      val actual = UserProfileFunctionLib.serialize(profile)
       expected should be(actual)
     }
     it("should give me the output in JSON format") {
-      val profiles: RDD[UserProfile] = FunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
     }
 
   }
