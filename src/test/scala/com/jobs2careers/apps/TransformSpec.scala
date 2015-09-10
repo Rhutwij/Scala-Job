@@ -93,7 +93,14 @@ class TransformSpec extends FunSpec with BeforeAndAfter with SharedSparkContext 
       val unionedProfiles = UserProfileFunctionLib.unionImpressionsRDD(profiles1, profiles2)
       unionedProfiles.count() should be(12)
     }
-    
+    //Test5.2
+    it("getting top5 Impressions") {
+      val profiles1: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getMailDataFrame(mailUpdateDataFrame))
+      val impressions: Array[(String, Seq[MailImpressions])]=profiles1.take(1);
+      val impressionsArray: Array[MailImpressions]=impressions.flatMap{case(email,imp)=>imp};
+      val impressionsCount=impressionsArray.length.toInt
+      impressionsCount should be <6
+    }
     //test 6 impression reduction 
     //Test6.1
     it("Impressions Reduction with ONE NULL RDD") {
