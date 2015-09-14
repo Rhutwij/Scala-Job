@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "com.etaty.rediscala" %% "rediscala" % "1.4.0",
-    "com.typesafe.play" %% "play-json" % "2.2.1",
+    "com.typesafe.play" %% "play-json" % "2.3.10",
     "com.typesafe" % "config" % "1.3.0",
     "joda-time" % "joda-time" % "2.8.1"
 )

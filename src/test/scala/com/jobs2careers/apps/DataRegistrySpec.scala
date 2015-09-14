@@ -13,6 +13,8 @@ import com.jobs2careers.utilities.SharedSparkContext
 import org.apache.spark.sql.DataFrame
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
+import org.apache.log4j.Logger
+import org.apache.log4j.Level
 
 class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkContext {
   private var sqlContext: SQLContext = _
@@ -69,24 +71,20 @@ class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkConte
   }
 
   it("be able to load paths even if they don't exist") {
-
     val input = Seq(s"$fixturesPath/2015/07/04/*.log", s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
-    val capturedOut = new ByteArrayOutputStream
-    val printStream = new PrintStream(capturedOut)
-    Console.withOut(printStream) {
-      Console.withErr(printStream) {
-        val df: DataFrame = DataRegistry.load(sqlContext, input)
-        df.count should be(41)
-        println(capturedOut)
-        capturedOut.toString().length() should be >= 100
-      }
-    }
-    capturedOut.close()
+    
+    val logLevel = Logger.getLogger(DataRegistry.getClass).getLevel
+    Logger.getLogger(DataRegistry.getClass).setLevel(Level.OFF)
+    
+    val df: DataFrame = DataRegistry.load(sqlContext, input)
+    df.count should be(41)
+    
+    Logger.getLogger(DataRegistry.getClass).setLevel(logLevel)
   }
 
   it("read multiple files from previous 2 weeks") {
     val mailImpressionPaths: Seq[String] = DataRegistry.datePaths(3, s"$fixturesPath/", "sample_mail_update.log", new LocalDate(2015, 7, 7))
-//    mailImpressionPaths.foreach { println }
+    //    mailImpressionPaths.foreach { println }
     if (mailImpressionPaths.isEmpty) {
       println("Files do not exist, cannot read files")
     } else {
