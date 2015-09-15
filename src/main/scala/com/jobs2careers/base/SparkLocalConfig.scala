@@ -9,7 +9,6 @@ trait SparkLocalConfig {
   
   sparkConf.setAppName(this.getClass.getName)
   sparkConf.setIfMissing("spark.master", "local[*]")
-  sparkConf.setSparkHome(config.getString("spark.context.home"))
   sparkConf.setJars(SparkContext.jarOfClass(this.getClass).toSeq)
   sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
 }

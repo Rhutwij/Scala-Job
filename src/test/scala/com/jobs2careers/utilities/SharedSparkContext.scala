@@ -1,9 +1,9 @@
 package com.jobs2careers.utilities
 
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Suite
 import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Suite
 
 /**
  * From https://github.com/apache/spark/blob/4a462c282c72c47eeecf35b4ab227c1bc71908e5/core/src/test/scala/org/apache/spark/SharedSparkContext.scala
@@ -24,18 +24,24 @@ trait SharedSparkContext extends BeforeAndAfterAll { self: Suite =>
   var conf = new SparkConf(false)
 
   override def beforeAll() {
+    killJvmSparkContext()
     _sc = new SparkContext("local[4]", "test", conf)
     super.beforeAll()
   }
 
   override def afterAll() {
-    if (_sc != null)
+    killJvmSparkContext()
+    super.afterAll()
+  }
+
+  def killJvmSparkContext() = {
+    if (_sc != null) {
       _sc.stop
 
-    // To avoid Akka rebinding to the same port, since it doesn't unbind immediately on shutdown
-    System.clearProperty("spark.driver.port")
+      // To avoid Akka rebinding to the same port, since it doesn't unbind immediately on shutdown
+      System.clearProperty("spark.driver.port")
 
-    _sc = null
-    super.afterAll()
+      _sc = null
+    }
   }
 }

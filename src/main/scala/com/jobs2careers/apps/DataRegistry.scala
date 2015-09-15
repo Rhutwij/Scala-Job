@@ -4,8 +4,11 @@ import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.DataFrame
+import org.slf4j.LoggerFactory
 
 object DataRegistry {
+  
+  val logger = LoggerFactory.getLogger(getClass)
 
   val fmt = DateTimeFormat.forPattern("yyyy/MM/dd/")
 
@@ -36,9 +39,7 @@ object DataRegistry {
           Some(dataFrame)
         } catch {
           case e: Throwable =>
-            //TODO log this exception properly!
-            println(s"Unable to load $path")
-            //e.printStackTrace()
+            logger.warn(s"Unable to load $path", e)
             None
         }
       }

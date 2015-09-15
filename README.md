@@ -49,3 +49,6 @@ You can change the following parameter to run on a Spark Standalone Cluster or Y
 --master="spark://ubuntu-master:7077"
 --master yarn-client
 ```
+
+## How to add configuration
+Developers should add configuration to `src/main/resources/development.conf`.
