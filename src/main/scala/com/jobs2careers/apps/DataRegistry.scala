@@ -1,16 +1,16 @@
 package com.jobs2careers.apps
 
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.SQLContext
 import org.joda.time.LocalDate
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.format.DateTimeFormatter
-import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
+
 import com.jobs2careers.utils.LogLike
 
 object DataRegistry extends LogLike {
-
   val fmt: DateTimeFormatter = DateTimeFormat.forPattern("yyyy/MM/dd/")
 
   def mail(sqlContext: SQLContext, sc: SparkContext, previousDays: Int, dateEnd: LocalDate = new LocalDate): DataFrame = {
@@ -48,23 +48,21 @@ object DataRegistry extends LogLike {
           Some(dataFrame)
         } catch {
           case e: Throwable =>
-            //TODO log this exception properly!
-            println(s"Unable to load $path")
-            //e.printStackTrace()
+            logger.warn(s"Unable to load $path", e)
             None
         }
       }
       val unionFlatFile: RDD[String] = rawImpressionsData.reduce { (a, b) =>
         a.union(b)
       }
-      
+
       val unionedDataFrame: DataFrame = sqlContext.read.json(unionFlatFile)
       //check if data is corrupt
       val corruptRecord: Boolean = unionedDataFrame.schema.fieldNames.contains("_corrupt_record")
 
       //countermeasure for corrupt data..if data is corrupt we only get non corrupt data and still read the file
       if (corruptRecord) {
-        logger.info("Corrupt records in file path"+paths.mkString(","))
+        logger.info("Corrupt records in file path" + paths.mkString(","))
         unionedDataFrame.where(unionedDataFrame("_corrupt_record").isNull)
       } else {
         unionedDataFrame
