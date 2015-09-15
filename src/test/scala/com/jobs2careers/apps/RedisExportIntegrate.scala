@@ -99,8 +99,8 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
 
       val userProfileJson: Option[String] = getValue(testUser, redis)
       //      val jobs = Json.parse(jobslist.get).as[Seq[String]]
-      userProfileJson.get should include("1839849788")
-      userProfileJson.get should include("4123")
+      userProfileJson.get should include("1841516234")
+      userProfileJson.get should include("1840534325")
       //      println(jobslist)
       //      jobslist should be ("abcdefg")
 
@@ -118,8 +118,8 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
 
       val userProfileJson: Option[String] = getValue(testUser, redis)
       //      val jobs = Json.parse(jobslist.get).as[Seq[String]]
-      userProfileJson.get should include("1839849788")
-      userProfileJson.get should include("4123")
+      userProfileJson.get should include("1841516234")
+      userProfileJson.get should include("1840534325")
       //      println(jobslist)
       //      jobslist should be ("abcdefg")
 
