@@ -75,7 +75,6 @@ class TransformSpec extends FunSpec with BeforeAndAfter with SharedSparkContext 
     //Test4
     it("should read transform MailDataFrame impressions in RDD[(String, Seq[MailImpressions])] ") {
       val profiles: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getMailDataFrame(mailUpdateDataFrame))
-
       profiles.count() should be(41)
     }
 
