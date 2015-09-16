@@ -19,6 +19,7 @@ import scala.concurrent.{ Await, Future }
 import play.api.libs.json.{ JsValue, Json }
 import com.jobs2careers.utilities.SharedSparkContext
 import com.jobs2careers.utils._
+import com.jobs2careers.models._
 
 /**
  * Example ScalaTest
@@ -36,9 +37,11 @@ import com.jobs2careers.utils._
  * describe blocks.
  */
 class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkContext with RedisConfig with LogLike {
-  private val fixture = "fixtures/sample_mail_update2.log"
+  private val emailFixture = "fixtures/sample_mail_update2.log"
+  private val pubEmailFixture="fixtures/sample_pubmail_update.log"
   private var sqlContext: SQLContext = _
   private var mailUpdateDataFrame: DataFrame = _
+  private var pubMailUpdateDataFrame: DataFrame = _
   implicit val akkaSystem = akka.actor.ActorSystem()
 
   before {
@@ -50,11 +53,19 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
         |********************************
       """.stripMargin
     val resource = new ClassPathResourceLoader()
-      .loadResource(fixture)
-    assert(resource != None, s"Test fixture $fixture does not exist!")
+      .loadResource(emailFixture)
+    val resource2 = new ClassPathResourceLoader()
+      .loadResource(pubEmailFixture)
+      
+    println(resource2.get);
+    assert(resource != None, s"Test fixture $emailFixture does not exist!")
+    assert(resource2 != None, s"Test fixture $pubEmailFixture does not exist!")
     val fixtureFile = resource.get
     val fixturesPath = fixtureFile.getPath
+    val fixtureFile2 = resource2.get
+    val fixturesPath2 = fixtureFile2.getPath
     mailUpdateDataFrame = sqlContext.jsonFile(fixturesPath)
+    pubMailUpdateDataFrame = sqlContext.jsonFile(fixturesPath2)
   }
   def getValue(key: String, redisclient: RedisClient): Option[String] = {
     val future = redisclient.get(key)
@@ -83,13 +94,13 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
       //clean up from previous run
       redis.del(testUser)
 
-      val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
-      UserProfileJob.transport(profiles)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
+      UserProfileFunctionLib.transport(profiles)
 
       val userProfileJson: Option[String] = getValue(testUser, redis)
       //      val jobs = Json.parse(jobslist.get).as[Seq[String]]
-      userProfileJson.get should include("1839849788")
-      userProfileJson.get should include("4123")
+      userProfileJson.get should include("1841516234")
+      userProfileJson.get should include("1840534325")
       //      println(jobslist)
       //      jobslist should be ("abcdefg")
 
@@ -102,13 +113,13 @@ class RedisExportIntegrate extends FunSpec with BeforeAndAfter with SharedSparkC
       //clean up from previous run
       redis.set(testUser, "")
 
-      val profiles: RDD[UserProfile] = UserProfileJob.transform(mailUpdateDataFrame)
-      UserProfileJob.transport(profiles)
+      val profiles: RDD[UserProfile] = UserProfileFunctionLib.transform(mailUpdateDataFrame,pubMailUpdateDataFrame)
+      UserProfileFunctionLib.transport(profiles)
 
       val userProfileJson: Option[String] = getValue(testUser, redis)
       //      val jobs = Json.parse(jobslist.get).as[Seq[String]]
-      userProfileJson.get should include("1839849788")
-      userProfileJson.get should include("4123")
+      userProfileJson.get should include("1841516234")
+      userProfileJson.get should include("1840534325")
       //      println(jobslist)
       //      jobslist should be ("abcdefg")
 

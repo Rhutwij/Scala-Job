@@ -1,20 +1,17 @@
 package com.jobs2careers.apps
 
+import org.apache.log4j.Level
+import org.apache.log4j.Logger
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.SQLContext
 import org.joda.time.LocalDate
-import org.joda.time.format.DateTimeFormat
 import org.scalatest.BeforeAndAfter
-import org.scalatest.Finders
 import org.scalatest.FunSpec
 import org.scalatest.Matchers.be
 import org.scalatest.Matchers.convertToAnyShouldWrapper
+
 import com.jobs2careers.utilities.ClassPathResourceLoader
 import com.jobs2careers.utilities.SharedSparkContext
-import org.apache.spark.sql.DataFrame
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
-import org.apache.log4j.Logger
-import org.apache.log4j.Level
 
 class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkContext {
   private var sqlContext: SQLContext = _
@@ -56,41 +53,42 @@ class DataRegistrySpec extends FunSpec with BeforeAndAfter with SharedSparkConte
 
     val input = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
 
-    val df: DataFrame = DataRegistry.load(sqlContext, input)
+    val df: DataFrame = DataRegistry.load(sqlContext, sc, input)
 
-    df.count should be(41)
+    df.count should be(88)
   }
 
   it("load null timestamps values") {
 
     val input = Seq(s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log", s"$fixturesPath/2015/07/15/*.log")
 
-    val df: DataFrame = DataRegistry.load(sqlContext, input)
+    val df: DataFrame = DataRegistry.load(sqlContext, sc, input)
 
-    df.count should be(45)
+    df.count should be(99)
   }
 
   it("be able to load paths even if they don't exist") {
     val input = Seq(s"$fixturesPath/2015/07/04/*.log", s"$fixturesPath/2015/07/07/*.log", s"$fixturesPath/2015/07/06/*.log", s"$fixturesPath/2015/07/05/*.log")
-    
     val logLevel = Logger.getLogger(DataRegistry.getClass).getLevel
     Logger.getLogger(DataRegistry.getClass).setLevel(Level.OFF)
-    
-    val df: DataFrame = DataRegistry.load(sqlContext, input)
-    df.count should be(41)
-    
+
+    val df: DataFrame = DataRegistry.load(sqlContext, sc, input)
+    df.count should be(88)
+
     Logger.getLogger(DataRegistry.getClass).setLevel(logLevel)
   }
 
   it("read multiple files from previous 2 weeks") {
     val mailImpressionPaths: Seq[String] = DataRegistry.datePaths(3, s"$fixturesPath/", "sample_mail_update.log", new LocalDate(2015, 7, 7))
+    val pubMailImpressionPaths: Seq[String] = DataRegistry.datePaths(3, s"$fixturesPath/", "sample_pubmail_update.log", new LocalDate(2015, 7, 7))
     //    mailImpressionPaths.foreach { println }
-    if (mailImpressionPaths.isEmpty) {
-      println("Files do not exist, cannot read files")
+    if (mailImpressionPaths.isEmpty || pubMailImpressionPaths.isEmpty) {
+      fail("Files do not exist, cannot read files")
     } else {
-      val MailDataFrame = DataRegistry.load(sqlContext, mailImpressionPaths)
-      val profiles = UserProfileJob.transform(MailDataFrame)
-      profiles.count() should be(23)
+      val MailDataFrame = DataRegistry.load(sqlContext, sc, mailImpressionPaths)
+      val pubMailDataFrame = DataRegistry.load(sqlContext, sc, pubMailImpressionPaths)
+      val profiles = UserProfileFunctionLib.transform(MailDataFrame, pubMailDataFrame)
+      profiles.count() should be(32)
     }
   }
 }
