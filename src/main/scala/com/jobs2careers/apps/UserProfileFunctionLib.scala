@@ -24,6 +24,7 @@ object UserProfileFunctionLib extends LogLike with RedisConfig with HashFunction
   implicit val akkaSystem = akka.actor.ActorSystem()
   implicit val mailImpressionsFormat = Json.format[MailImpressions]
   implicit val profileFormat = Json.format[UserProfile]
+  val impressionLimit=5;
 
   def getMailDataFrame(mailDataFrame: DataFrame): DataFrame = {
     val emailToImpressionsDf: DataFrame = mailDataFrame.select(
@@ -58,8 +59,10 @@ object UserProfileFunctionLib extends LogLike with RedisConfig with HashFunction
   }
   
   def impressionReduction(impressions: RDD[(String, Seq[MailImpressions])]): RDD[(String, Seq[MailImpressions])]={
-    impressions.reduceByKey((q1, q2) => q1 ++ q2)
+    val reductionResult:RDD[(String, Seq[MailImpressions])]=impressions.reduceByKey((q1, q2) => q1 ++ q2)
+    reductionResult
   }
+  
   
   def unionImpressionsRDD(rdd1:RDD[(String, Seq[MailImpressions])],rdd2:RDD[(String, Seq[MailImpressions])]):RDD[(String, Seq[MailImpressions])]={
     rdd1.union(rdd2)
@@ -68,14 +71,17 @@ object UserProfileFunctionLib extends LogLike with RedisConfig with HashFunction
 
   def groupImpressionsBySentTime(impressions: RDD[(String, Seq[MailImpressions])]): RDD[UserProfile]={
     impressions.map {
-      case (email: String, impressions: Seq[MailImpressions]) =>
-        val sentImpressions: Map[String, Seq[MailImpressions]] = impressions.groupBy(impressions => impressions.sent)
-        val combinedSentImpressions = sentImpressions mapValues { listMailImpressions =>
+      case (email: String, impressions1: Seq[MailImpressions]) =>
+        val sentImpressions: Map[String, Seq[MailImpressions]] = impressions1.groupBy(impressions1 => impressions1.sent)
+        val combinedSentImpressions: Map[String, MailImpressions] = sentImpressions mapValues { listMailImpressions =>
           listMailImpressions reduce { (a, b) =>
             a.copy(jobs = a.jobs ++ b.jobs)
           }
         }
-        val userImpressions = combinedSentImpressions.values.toList
+        //limiting number of impressions per day of same user
+       val reduceImpressions:Map[String,MailImpressions]=combinedSentImpressions.map{case (eid:String,imp:MailImpressions)=> (eid.toString(),MailImpressions(imp.sent,imp.jobs.slice(0, impressionLimit)))}
+       val userImpressions = reduceImpressions.values.toList;
+        
         UserProfile(email, userImpressions)
     }
     

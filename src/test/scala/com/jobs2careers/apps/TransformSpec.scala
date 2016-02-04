@@ -20,12 +20,14 @@ import com.jobs2careers.utils.HashFunctions
  * 5) Test 7 testing groupImpressionsBySentTime
  *
  */
-class TransformSpec extends FunSpec with BeforeAndAfter with SharedSparkContext with RedisConfig with HashFunctions{
+class TransformSpec extends FunSpec with BeforeAndAfter with SharedSparkContext with RedisConfig with HashFunctions {
   private val emailFixture = "fixtures/sample_mail_update.log"
+  private val emailFixture_multiple = "fixtures/multiple_mail_entries.log"
   private val PubEmailFixture = "fixtures/sample_pubmail_update.log"
   private var sqlContext: SQLContext = _
   private var mailUpdateDataFrame: DataFrame = _
   private var pubMailUpdateDataFrame: DataFrame = _
+  private var pubMailUpdateDataFrame_multiple: DataFrame = _
 
   before({
     sqlContext = new SQLContext(sc)
@@ -45,8 +47,15 @@ class TransformSpec extends FunSpec with BeforeAndAfter with SharedSparkContext 
     assert(resource2 != None, s"Test fixture $PubEmailFixture does not exist!")
     val fixtureFile2 = resource2.get
     val fixturesPath2 = fixtureFile2.getPath
+    //third data frame
+    val resource3 = new ClassPathResourceLoader()
+      .loadResource(emailFixture_multiple)
+    assert(resource3 != None, s"Test fixture $PubEmailFixture does not exist!")
+    val fixtureFile3 = resource3.get
+    val fixturesPath3 = fixtureFile3.getPath
     mailUpdateDataFrame = DataRegistry.load(sqlContext, sc, Seq(fixturesPath))
     pubMailUpdateDataFrame = DataRegistry.load(sqlContext, sc, Seq(fixturesPath2))
+    pubMailUpdateDataFrame_multiple = DataRegistry.load(sqlContext, sc, Seq(fixturesPath3))
   })
 
   describe("UserProfileApp") {
@@ -95,10 +104,10 @@ class TransformSpec extends FunSpec with BeforeAndAfter with SharedSparkContext 
     //Test5.2
     it("getting top5 Impressions") {
       val profiles1: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getMailDataFrame(mailUpdateDataFrame))
-      val impressions: Array[(String, Seq[MailImpressions])]=profiles1.take(1);
-      val impressionsArray: Array[MailImpressions]=impressions.flatMap{case(email,imp)=>imp};
-      val impressionsCount=impressionsArray.length.toInt
-      impressionsCount should be <6
+      val impressions: Array[(String, Seq[MailImpressions])] = profiles1.take(1);
+      val impressionsArray: Array[MailImpressions] = impressions.flatMap { case (email, imp) => imp };
+      val impressionsCount = impressionsArray.length.toInt
+      impressionsCount should be < 6
     }
     //test 6 impression reduction 
     //Test6.1
@@ -106,30 +115,43 @@ class TransformSpec extends FunSpec with BeforeAndAfter with SharedSparkContext 
       val profiles1: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getPubMailDataFrame(pubMailUpdateDataFrame))
       val profiles2: RDD[(String, Seq[MailImpressions])] = sc.emptyRDD
       val unionedProfiles: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.unionImpressionsRDD(profiles1, profiles2)
-      val reducedRDD: RDD[(String, Seq[MailImpressions])]=UserProfileFunctionLib.impressionReduction(unionedProfiles)
+      val reducedRDD: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.impressionReduction(unionedProfiles)
       reducedRDD.count() should be(9)
     }
-    
+
     //Test6.2
     it("Impressions Reduction with NO NULL") {
       val profiles1: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getPubMailDataFrame(pubMailUpdateDataFrame))
       val profiles2: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getMailDataFrame(mailUpdateDataFrame))
       val unionedProfiles: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.unionImpressionsRDD(profiles1, profiles2)
-      val reducedRDD: RDD[(String, Seq[MailImpressions])]=UserProfileFunctionLib.impressionReduction(unionedProfiles)
+      val reducedRDD: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.impressionReduction(unionedProfiles)
       reducedRDD.count() should be(32)
     }
-    
+
     //Test 7 grouping by time
     it("Grouping impressions by time test") {
       val profiles1: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getPubMailDataFrame(pubMailUpdateDataFrame))
       val profiles2: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getMailDataFrame(mailUpdateDataFrame))
       val unionedProfiles: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.unionImpressionsRDD(profiles1, profiles2)
-      val reducedRDD: RDD[(String, Seq[MailImpressions])]=UserProfileFunctionLib.impressionReduction(unionedProfiles)
-      val groupedRDD: RDD[UserProfile]=UserProfileFunctionLib.groupImpressionsBySentTime(reducedRDD)
-      val pubprof=groupedRDD.map{case UserProfile(x,y)=>x}.filter { email => email=="741+rhutwij@jobs2careers.com"}.count()
-      val mailprof=groupedRDD.map{case UserProfile(x,y)=>x}.filter { email => email=="ethorson2@yahoo.com"}.count()
-      pubprof should be (mailprof)
-      groupedRDD.count() should be (32)
+      val reducedRDD: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.impressionReduction(unionedProfiles)
+      val groupedRDD: RDD[UserProfile] = UserProfileFunctionLib.groupImpressionsBySentTime(reducedRDD)
+      val pubprof = groupedRDD.map { case UserProfile(x, y) => x }.filter { email => email == "741+rhutwij@jobs2careers.com" }.count()
+      val mailprof = groupedRDD.map { case UserProfile(x, y) => x }.filter { email => email == "ethorson2@yahoo.com" }.count()
+      pubprof should be(mailprof)
+      groupedRDD.count() should be(32)
+    }
+
+    //Test to check number of impressions
+    it("test to check user impressins not greater than 5") {
+      val profiles1: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getPubMailDataFrame(pubMailUpdateDataFrame_multiple))
+     // profiles1.foreach{
+        //println
+      //}
+      val userIdToUserProfilesCombined: RDD[(String, Seq[MailImpressions])] =UserProfileFunctionLib.impressionReduction(profiles1)
+      //userIdToUserProfilesCombined.foreach(println)
+      val userIdToUserProfilesMerged: RDD[UserProfile] = UserProfileFunctionLib.groupImpressionsBySentTime(userIdToUserProfilesCombined)
+      userIdToUserProfilesMerged.foreach { println }
+      
     }
   }
 }
