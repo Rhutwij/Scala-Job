@@ -24,7 +24,7 @@ object UserProfileFunctionLib extends LogLike with RedisConfig with HashFunction
   implicit val akkaSystem = akka.actor.ActorSystem()
   implicit val mailImpressionsFormat = Json.format[MailImpressions]
   implicit val profileFormat = Json.format[UserProfile]
-  val impressionLimit=5;
+  val impressionLimit = applicationConfiguration.getInt("impression.limit");
 
   def getMailDataFrame(mailDataFrame: DataFrame): DataFrame = {
     val emailToImpressionsDf: DataFrame = mailDataFrame.select(

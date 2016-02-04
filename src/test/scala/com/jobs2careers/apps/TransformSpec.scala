@@ -150,7 +150,7 @@ class TransformSpec extends FunSpec with BeforeAndAfter with SharedSparkContext 
       val userIdToUserProfilesCombined: RDD[(String, Seq[MailImpressions])] =UserProfileFunctionLib.impressionReduction(profiles1)
       //userIdToUserProfilesCombined.foreach(println)
       val userIdToUserProfilesMerged: RDD[UserProfile] = UserProfileFunctionLib.groupImpressionsBySentTime(userIdToUserProfilesCombined)
-      userIdToUserProfilesMerged.foreach { println }
+      userIdToUserProfilesMerged.map{x=>x.mailImpressions}.count() should be (2);
       
     }
   }
