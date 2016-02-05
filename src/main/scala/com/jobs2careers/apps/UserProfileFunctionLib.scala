@@ -79,7 +79,12 @@ object UserProfileFunctionLib extends LogLike with RedisConfig with HashFunction
           }
         }
         //limiting number of impressions per day of same user
-       val reduceImpressions:Map[String,MailImpressions]=combinedSentImpressions.map{case (eid:String,imp:MailImpressions)=> (eid.toString(),MailImpressions(imp.sent,imp.jobs.slice(0, impressionLimit)))}
+       val reduceImpressions:Map[String,MailImpressions]=combinedSentImpressions.map{
+         case (eid:String,imp:MailImpressions)=> 
+         
+           (eid.toString(),imp.copy(imp.sent,imp.jobs.slice(0, impressionLimit)))
+         }
+       
        val userImpressions = reduceImpressions.values.toList;
         
         UserProfile(email, userImpressions)
@@ -139,7 +144,6 @@ object UserProfileFunctionLib extends LogLike with RedisConfig with HashFunction
 
   def PutProfileRedis(key: String, exp: Int, redisClient: RedisClient, value: String): Future[Boolean] = {
     //kick it three times max
-
     val future: Future[Boolean] = redisClient.setex(key, exp, value) recover {
       case _ =>
         val attempt2: Future[Boolean] = redisClient.setex(key, exp, value) recover {
