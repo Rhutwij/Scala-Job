@@ -142,16 +142,39 @@ class TransformSpec extends FunSpec with BeforeAndAfter with SharedSparkContext 
     }
 
     //Test to check number of impressions
-    it("test to check user impressins not greater than 5") {
+    it("test to check user impressions per day should not be greater than 15") {
       val profiles1: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getPubMailDataFrame(pubMailUpdateDataFrame_multiple))
-     // profiles1.foreach{
-        //println
+      // profiles1.foreach{
+      //println
       //}
-      val userIdToUserProfilesCombined: RDD[(String, Seq[MailImpressions])] =UserProfileFunctionLib.impressionReduction(profiles1)
+      val userIdToUserProfilesCombined: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.impressionReduction(profiles1)
       //userIdToUserProfilesCombined.foreach(println)
       val userIdToUserProfilesMerged: RDD[UserProfile] = UserProfileFunctionLib.groupImpressionsBySentTime(userIdToUserProfilesCombined)
-      userIdToUserProfilesMerged.map{x=>x.mailImpressions}.count() should be (2);
-      
+      userIdToUserProfilesMerged.map { x => x.mailImpressions }.map { row =>
+        if (row.length == 2)
+          (row(0).jobs.length, row(1).jobs.length)
+        else
+          (row(0).jobs.length, 0)
+      }.map { row =>
+        if (row._1 > 15 || row._2 > 15) //per day the limit should not be > 15
+          ("0", 0) //return false if >15 even one value
+        else
+          ("1", 1) //return true if <15
+      }.reduceByKey((a, b) => a + b).collect()(0)._1.toInt should be(1);
+      //userIdToUserProfilesMerged.map{x=>x.mailImpressions}.count() should be (2);
+
+    }
+
+    //Test to check number of impressions
+    it("test to check user dates total should be less than 2") {
+      val profiles1: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.transformImpressions(UserProfileFunctionLib.getPubMailDataFrame(pubMailUpdateDataFrame_multiple))
+      val userIdToUserProfilesCombined: RDD[(String, Seq[MailImpressions])] = UserProfileFunctionLib.impressionReduction(profiles1)
+      //userIdToUserProfilesCombined.foreach(println)
+      val userIdToUserProfilesMerged: RDD[UserProfile] = UserProfileFunctionLib.groupImpressionsBySentTime(userIdToUserProfilesCombined)
+      val perdayCount = userIdToUserProfilesMerged.map { x => ("count", x.mailImpressions.length) }.collect();
+      perdayCount(0)._2 should be <= (2);
+      perdayCount(1)._2 should be <= (2);
+
     }
   }
 }
